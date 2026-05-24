@@ -85,6 +85,22 @@ public class College : AggregateRoot
         // RaiseDomainEvent(new UserEmailVerifiedDomainEvent(Id, Email));
     }
 
+    public void UpdateDetails(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, string updatedBy)
+    {
+        Name = name.Trim();
+        Code = code.Trim().ToUpperInvariant();
+        Email = email.Trim().ToLowerInvariant();
+        Phone = phone.Trim();
+        Website = website.Trim().ToLowerInvariant();
+        AffiliatedBy = affiliatedBy.Trim();
+        Type = type;
+        City = city.Trim();
+        State = state.Trim();
+        Pincode = pincode.Trim();
+        RegisteredBy = updatedBy;
+        SetUpdatedAt();
+    }
+
     // ------------ Status Management --------------------
     public void Deactivate()
     {

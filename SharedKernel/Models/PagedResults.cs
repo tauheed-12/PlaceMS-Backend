@@ -10,18 +10,18 @@ public class PagedResult<T>
 {
     public List<T> Items { get; set; } = new();
     public int TotalCount { get; set; }
-    public int Page { get; set; }
+    public int PageNumber { get; set; }
     public int PageSize { get; set; }
     public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
-    public bool HasPrevious => Page > 1;
-    public bool HasNext => Page < TotalPages;
+    public bool HasPrevious => PageNumber > 1;
+    public bool HasNext => PageNumber < TotalPages;
 
     public static PagedResult<T> Create(List<T> items, int totalCount, int page, int pageSize)
         => new()
         {
             Items = items,
             TotalCount = totalCount,
-            Page = page,
+            PageNumber = page,
             PageSize = pageSize
         };
 
@@ -30,7 +30,7 @@ public class PagedResult<T>
         {
             Items = new(),
             TotalCount = 0,
-            Page = page,
+            PageNumber = page,
             PageSize = pageSize
         };
 }
@@ -43,7 +43,7 @@ public class PaginationQuery
 {
     private int _pageSize = Pagination.DefaultPageSize;
 
-    public int Page { get; set; } = Pagination.DefaultPage;
+    public int PageNumber { get; set; } = Pagination.DefaultPage;
 
     public int PageSize
     {
@@ -56,5 +56,5 @@ public class PaginationQuery
     public string? SortBy { get; set; }
     public bool SortDescending { get; set; } = false;
 
-    public int Skip => (Page - 1) * PageSize;
+    public int Skip => (PageNumber - 1) * PageSize;
 }

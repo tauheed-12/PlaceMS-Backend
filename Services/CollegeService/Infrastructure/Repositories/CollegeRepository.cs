@@ -1,3 +1,4 @@
+using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.Interfaces;
 using CollegeService.Domain.Entities;
 using CollegeService.Infrastructure.Persistence;
@@ -61,12 +62,56 @@ public class CollegeRepository : ICollegeRepository
             .ToListAsync(ct);
     }
 
-    public IQueryable<College> GetQueryable()
-        => _context.Colleges.AsQueryable();
+    public async Task<(IEnumerable<College> Items, int TotalCount)> GetFilteredAsync(CollegeFilterRequestDto filter, CancellationToken ct = default)
+    {
+        var query = _context.Colleges.AsNoTracking(); // soft-delete filter already applied globally
 
-    public void Update(College college)
-        => _context.Colleges.Update(college);
+        // --- filters ---
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim().ToLower();
+            query = query.Where(c =>
+                c.Name.ToLower().Contains(term) ||
+                c.Code.ToLower().Contains(term) ||
+                c.Email.ToLower().Contains(term));
+        }
 
-    public Task<int> SaveChangesAsync(CancellationToken ct = default)
-        => _context.SaveChangesAsync(ct);
+        if (!string.IsNullOrWhiteSpace(filter.State))
+            query = query.Where(c => c.State.ToLower() == filter.State.Trim().ToLower());
+
+        if (!string.IsNullOrWhiteSpace(filter.City))
+            query = query.Where(c => c.City.ToLower() == filter.City.Trim().ToLower());
+
+        if (filter.VerificationStatus.HasValue)
+            query = query.Where(c => c.VerificationStatus == filter.VerificationStatus.Value);
+
+        if (filter.HasTpoAssigned.HasValue)
+        {
+            var collegeIdsWithTpo = _context.CollegeTpos
+                .Where(t => !t.IsDeleted)
+                .Select(t => t.CollegeId);
+
+            query = filter.HasTpoAssigned.Value
+                ? query.Where(c => collegeIdsWithTpo.Contains(c.Id))
+                : query.Where(c => !collegeIdsWithTpo.Contains(c.Id));
+        }
+
+        // --- count before pagination ---
+        var totalCount = await query.CountAsync(ct);
+
+        // --- pagination ---
+        var items = await query
+            .OrderBy(c => c.Name)
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync(ct);
+
+        return (items, totalCount);
+    }
+
+    public IQueryable<College> GetQueryable() => _context.Colleges.AsQueryable();
+
+    public void Update(College college) => _context.Colleges.Update(college);
+
+    public Task<int> SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
 }

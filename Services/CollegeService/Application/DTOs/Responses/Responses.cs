@@ -25,6 +25,12 @@ public record CreateCollegeResponseDto
     public string Message { get; init; } = "College registered successfully";
 }
 
+public record UpdateCollegeResponseDto
+{
+    public CollegeShortDto College { get; init; } = null!;
+    public string Message { get; init; } = "College updated successfully";
+}
+
 public record CollegeShortDto
 {
     public Guid Id { get; init; }

@@ -49,6 +49,53 @@ public class CollegeService : ICollegeService
         return BuildCollegeResponse(college);
     }
 
+    public async Task<UpdateCollegeResponseDto> UpdateAsync(UpdateCollegeRequestDto request, string updatedBy, CancellationToken ct)
+    {
+        string userName = "Hello"; // TODO: update it from jwt token
+
+        var existingCollege = await _collegeRepo.GetByIdAsync(request.Id, ct) ??
+            throw new NotFoundException("College not found");
+
+        if (existingCollege.Email != request.Email && await _collegeRepo.EmailExistsAsync(request.Email, ct))
+            throw new ConflictException("college", "email", request.Email);
+
+        if (existingCollege.Code != request.Code && await _collegeRepo.CodeExistsAsync(request.Code, ct))
+            throw new ConflictException("college", "code", request.Code);
+
+        existingCollege.UpdateDetails(
+            request.Name,
+            request.Code,
+            request.Email,
+            request.Phone,
+            request.Website,
+            request.AffiliatedBy,
+            request.Type,
+            request.City,
+            request.State,
+            request.Pincode,
+            userName
+        );
+
+        _collegeRepo.Update(existingCollege);
+        await _collegeRepo.SaveChangesAsync(ct);
+
+        _logger.LogInformation("College {CollegeId} updated with name {Name}", existingCollege.Id, request.Name);
+
+        return new UpdateCollegeResponseDto
+        {
+            Message = "College updated successfully",
+            College = new CollegeShortDto
+            {
+                Id = existingCollege.Id,
+                Name = existingCollege.Name,
+                Code = existingCollege.Code,
+                City = existingCollege.City,
+                State = existingCollege.State,
+                VerificationStatus = existingCollege.VerificationStatus
+            }
+        };
+    }
+
     public async Task DeactivateCollegeAsync(Guid collegeId, CancellationToken ct)
     {
         var existingCollege = await _collegeRepo.GetByIdAsync(collegeId, ct) ??

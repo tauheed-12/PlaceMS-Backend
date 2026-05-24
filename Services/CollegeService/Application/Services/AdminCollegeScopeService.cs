@@ -41,46 +41,6 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
     public async Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct)
         => await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
 
-    public async Task<List<CollegeShortDto>> GetCollegesDetailsByAdminIdAsync(Guid adminUserId, CancellationToken ct)
-    {
-        var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
-        var collegeDetails = await _collegeRepository.GetByIdsAsync(collegeIds, ct);
-
-        List<CollegeShortDto> collegesWithTpoInfo = new List<CollegeShortDto>();
-
-        foreach (var college in collegeDetails)
-        {
-            var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(college.Id, ct);
-            if (tpo == null)
-            {
-                collegesWithTpoInfo.Add(new CollegeShortDto
-                {
-                    Id = college.Id,
-                    Name = college.Name,
-                    Code = college.Code,
-                    City = college.City,
-                    State = college.State,
-                    VerificationStatus = college.VerificationStatus,
-                    HasTpoAssigned = false
-                });
-            }
-            else
-            {
-                collegesWithTpoInfo.Add(new CollegeShortDto
-                {
-                    Id = college.Id,
-                    Name = college.Name,
-                    Code = college.Code,
-                    City = college.City,
-                    State = college.State,
-                    VerificationStatus = college.VerificationStatus,
-                    HasTpoAssigned = true
-                });
-            }
-        }
-        return collegesWithTpoInfo;
-    }
-
     public async Task<List<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminUserId, CancellationToken ct)
     {
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);

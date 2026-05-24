@@ -4,6 +4,8 @@ using CollegeService.Domain.Entities;
 using SharedKernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel.Enums;
+using SharedKernel.Models;
+using CollegeService.Application.DTOs.Requests;
 
 namespace CollegeService.Application.Services;
 
@@ -11,20 +13,23 @@ public class CollegeQueryService : ICollegeQueryService
 {
     private readonly ICollegeRepository _collegeRepository;
     private readonly IAdminCollegeScopeService _adminCollegeScopeService;
+    private readonly ICollegeTpoRepository _tpoRepository;
 
-    public CollegeQueryService(ICollegeRepository collegeRepository, IAdminCollegeScopeService adminCollegeScopeService)
+    public CollegeQueryService(ICollegeRepository collegeRepository, IAdminCollegeScopeService adminCollegeScopeService, ICollegeTpoRepository tpoRepository)
     {
         _collegeRepository = collegeRepository;
         _adminCollegeScopeService = adminCollegeScopeService;
+        _tpoRepository = tpoRepository;
     }
 
-    public async Task<List<CollegeShortDto>> GetAllCollegesAsync(int pageNumber, int pageSize, CancellationToken ct)
+    public async Task<PaginatedResponseDto<CollegeShortDto>> GetAllCollegesAsync(int pageNumber, int pageSize, CancellationToken ct)
     {
         if (pageNumber <= 0) pageNumber = 1;
 
         if (pageSize <= 0) pageSize = 10;
 
         var query = _collegeRepository.GetQueryable();
+        var totalCount = await query.CountAsync(ct);
 
         var colleges = await query
             .OrderBy(c => c.Name)
@@ -32,7 +37,31 @@ public class CollegeQueryService : ICollegeQueryService
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return [.. colleges.Select(c => MapToShortDto(c))];
+        var pagedCollegeIds = colleges
+        .Select(c => c.Id)
+        .ToList();
+
+        var tpoCollegeIds = await _tpoRepository.GetCollegeIdsHavingPrimaryTpoAsync(pagedCollegeIds, ct);
+
+        var result = colleges.Select(college => new CollegeShortDto
+        {
+            Id = college.Id,
+            Name = college.Name,
+            Code = college.Code,
+            City = college.City,
+            State = college.State,
+            VerificationStatus = college.VerificationStatus,
+            HasTpoAssigned = tpoCollegeIds.Contains(college.Id)
+        }).ToList();
+
+        return new PaginatedResponseDto<CollegeShortDto>
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = result
+        };
     }
 
     public async Task<CollegeDetailsDto> GetCollegeByIdAsync(Guid id, CancellationToken ct)
@@ -79,16 +108,24 @@ public class CollegeQueryService : ICollegeQueryService
             .OrderBy(c => c.Name)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new CollegeShortDto
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Code = c.Code,
-                City = c.City,
-                State = c.State,
-                VerificationStatus = c.VerificationStatus
-            })
             .ToListAsync(ct);
+
+        var pagedCollegeIds = colleges
+        .Select(c => c.Id)
+        .ToList();
+
+        var tpoCollegeIds = await _tpoRepository.GetCollegeIdsHavingPrimaryTpoAsync(pagedCollegeIds, ct);
+
+        var result = colleges.Select(college => new CollegeShortDto
+        {
+            Id = college.Id,
+            Name = college.Name,
+            Code = college.Code,
+            City = college.City,
+            State = college.State,
+            VerificationStatus = college.VerificationStatus,
+            HasTpoAssigned = tpoCollegeIds.Contains(college.Id)
+        }).ToList();
 
         return new PaginatedResponseDto<CollegeShortDto>
         {
@@ -96,8 +133,22 @@ public class CollegeQueryService : ICollegeQueryService
             PageSize = pageSize,
             TotalCount = totalCount,
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-            Items = colleges
+            Items = result
         };
+    }
+
+    public async Task<PagedResult<CollegeShortDto>> GetFilteredCollegesAsync(CollegeFilterRequestDto filter, CancellationToken ct = default)
+    {
+        var (items, totalCount) = await _collegeRepository.GetFilteredAsync(filter, ct);
+
+        return new PagedResult<CollegeShortDto>
+        {
+            Items = items.Select(c => MapToShortDto(c)).ToList(),
+            TotalCount = totalCount,
+            PageNumber = filter.PageNumber,
+            PageSize = filter.PageSize,
+        };
+
     }
 
     public async Task<ValidateCollegeCodeResponseDto> ValidateCollegeAsync(string code, CancellationToken ct)

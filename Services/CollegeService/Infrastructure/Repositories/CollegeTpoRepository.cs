@@ -33,6 +33,12 @@ public class CollegeTpoRepository : ICollegeTpoRepository
             .Where(t => t.CollegeId == collegeId)
             .ToListAsync(ct);
 
+    public async Task<List<Guid>> GetCollegeIdsHavingPrimaryTpoAsync(List<Guid> collegeIds, CancellationToken ct)
+        => await _context.CollegeTpos
+            .Where(t => collegeIds.Contains(t.CollegeId) && t.IsPrimary && t.IsActive)
+            .Select(t => t.CollegeId)
+            .ToListAsync(ct);
+
     public void Update(CollegeTpo collegeTpo)
         => _context.CollegeTpos.Update(collegeTpo);
 

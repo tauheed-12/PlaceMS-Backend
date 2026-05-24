@@ -5,6 +5,7 @@ using CollegeService.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using SharedKernel.Abstractions;
 using SharedKernel.Enums;
+using SharedKernel.Models;
 
 namespace CollegeService.Application.Interfaces;
 
@@ -12,17 +13,19 @@ public interface ICollegeService
 {
     Task<CreateCollegeResponseDto> RegisterAsync(CreateCollegeRequestDto request, string registeredBy, CancellationToken ct);
     // Task VerifyCollegeEmailAsync(string token, CancellationToken ct);
+    Task<UpdateCollegeResponseDto> UpdateAsync(UpdateCollegeRequestDto request, string updatedBy, CancellationToken ct);
     Task DeactivateCollegeAsync(Guid collegeId, CancellationToken ct);
     Task ReactivateCollegeAsync(Guid collegeId, CancellationToken ct);
 }
 
 public interface ICollegeQueryService
 {
-    Task<List<CollegeShortDto>> GetAllCollegesAsync(int pageNumber, int pageSize, CancellationToken ct);
+    Task<PaginatedResponseDto<CollegeShortDto>> GetAllCollegesAsync(int pageNumber, int pageSize, CancellationToken ct);
     Task<CollegeDetailsDto> GetCollegeByIdAsync(Guid id, CancellationToken ct);
     Task<CollegeDetailsDto> GetCollegeByCodeAsync(string code, CancellationToken ct);
     Task<List<CollegeShortDto>> GetCollegesByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct);
     Task<List<CollegeShortDto>> GetCollegesByCodesAsync(IEnumerable<string> codes, CancellationToken ct);
+    Task<PagedResult<CollegeShortDto>> GetFilteredCollegesAsync(CollegeFilterRequestDto filter, CancellationToken ct = default);
 
     Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(
         Guid adminId,
@@ -42,6 +45,8 @@ public interface ICollegeRepository
     Task<List<College>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
     Task<List<College>> GetByCodesAsync(IEnumerable<string> codes, CancellationToken ct = default);
 
+    Task<(IEnumerable<College> Items, int TotalCount)> GetFilteredAsync(CollegeFilterRequestDto filter, CancellationToken ct = default);
+
     Task<bool> EmailExistsAsync(string email, CancellationToken ct = default);
     Task<bool> CodeExistsAsync(string code, CancellationToken ct = default);
 
@@ -57,7 +62,6 @@ public interface IAdminCollegeScopeService
     Task AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task RemoveCollegeFromAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
-    Task<List<CollegeShortDto>> GetCollegesDetailsByAdminIdAsync(Guid adminUserId, CancellationToken ct);
     Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct);
     Task<List<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminUserId, CancellationToken ct);
 }
@@ -85,6 +89,8 @@ public interface ICollegeTpoRepository
     Task<CollegeTpo?> GetPrimaryTpoByCollegeIdAsync(Guid collegeId, CancellationToken ct = default);
     Task<CollegeTpo?> GetTpoByEmailAsync(string email, CancellationToken ct = default);
     Task<List<CollegeTpo>> GetTposByCollegeIdAsync(Guid collegeId, CancellationToken ct = default);
+    Task<List<Guid>> GetCollegeIdsHavingPrimaryTpoAsync(List<Guid> collegeIds, CancellationToken ct);
+    Task<(IEnumerable<College> Items, int TotalCount)> GetFilteredAsync(CollegeFilterRequestDto filter, CancellationToken ct = default);
     Task AddAsync(CollegeTpo collegeTpo, CancellationToken ct = default);
     void Update(CollegeTpo collegeTpo);
     Task<int> SaveChangesAsync(CancellationToken ct = default);
