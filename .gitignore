@@ -1,0 +1,143 @@
+# =========================
+# ASP.NET Core 8 / .NET 8
+# =========================
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+out/
+
+# Visual Studio cache/options
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Entity Framework
+*.dbmdl
+
+# Publish output
+publish/
+wwwroot/dist/
+wwwroot/lib/
+
+# IIS Express
+iisexpress/
+*.vspscc
+*.vssscc
+
+# Azure
+PublishScripts/
+
+# User secrets
+secrets.json
+
+# Environment files
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+
+# Node modules (React/Angular/Vue frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend build outputs
+dist/
+build/
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test results
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+
+# Generated files
+Generated/
+*.generated.cs
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# SQLite
+*.sqlite
+*.db
+
+# Certificates
+*.pfx
+*.key
+*.pem
+
+# Local history
+.history/
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+# SonarQube
+.sonarqube/
+
+# GitHub Copilot
+.copilot/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Mac/Linux swap files
+*~
+*.swp
+*.swo

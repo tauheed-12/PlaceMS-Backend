@@ -1,0 +1,183 @@
+using FluentValidation;
+using IdentityService.Application.DTOs.Requests;
+using SharedKernel.Constants;
+using SharedKernel.Enums;
+
+namespace IdentityService.Application.Validators;
+
+public class LoginRequestValidator : AbstractValidator<LoginRequest>
+{
+    public LoginRequestValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .MaximumLength(ValidationRules.EmailMaxLength);
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(ValidationRules.PasswordMinLength)
+                .WithMessage($"Password must be at least {ValidationRules.PasswordMinLength} characters.");
+    }
+}
+
+public class RegisterUserRequestValidator : AbstractValidator<RegisterUserRequest>
+{
+    public RegisterUserRequestValidator()
+    {
+        RuleFor(x => x.FullName)
+            .NotEmpty().WithMessage("Full name is required.")
+            .MinimumLength(ValidationRules.NameMinLength)
+            .MaximumLength(ValidationRules.NameMaxLength);
+
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .MaximumLength(ValidationRules.EmailMaxLength);
+
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(ValidationRules.PhonePattern)
+                .WithMessage("Enter a valid 10-digit Indian mobile number.");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(ValidationRules.PasswordMinLength)
+                .WithMessage($"Password must be at least {ValidationRules.PasswordMinLength} characters.")
+            .MaximumLength(ValidationRules.PasswordMaxLength)
+            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches(@"[0-9]").WithMessage("Password must contain at least one number.")
+            .Matches(@"[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+
+        RuleFor(x => x.Role)
+            .IsInEnum().WithMessage("Invalid role specified.")
+            .NotEqual(UserRole.Student)
+                .WithMessage("Use the student registration endpoint for student accounts.");
+
+        // CollegeId and CollegeCode are required for roles tied to a college
+        When(x => x.Role == UserRole.TPO || x.Role == UserRole.PlacementCoordinator, () =>
+        {
+            RuleFor(x => x.CollegeId)
+                .NotNull().WithMessage("College ID is required for this role.")
+                .NotEqual(Guid.Empty).WithMessage("A valid College ID is required.");
+
+            RuleFor(x => x.CollegeCode)
+                .NotEmpty().WithMessage("College code is required for this role.")
+                .Matches(ValidationRules.CollegeCodePattern)
+                    .WithMessage("College code must be uppercase alphanumeric.")
+                .MinimumLength(ValidationRules.CollegeCodeMinLength)
+                .MaximumLength(ValidationRules.CollegeCodeMaxLength);
+        });
+    }
+}
+
+public class StudentRegisterRequestValidator : AbstractValidator<StudentRegisterRequest>
+{
+    public StudentRegisterRequestValidator()
+    {
+        RuleFor(x => x.FullName)
+            .NotEmpty().WithMessage("Full name is required.")
+            .MinimumLength(ValidationRules.NameMinLength)
+            .MaximumLength(ValidationRules.NameMaxLength);
+
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.")
+            .MaximumLength(ValidationRules.EmailMaxLength);
+
+        RuleFor(x => x.PhoneNumber)
+            .NotEmpty().WithMessage("Phone number is required.")
+            .Matches(ValidationRules.PhonePattern)
+                .WithMessage("Enter a valid 10-digit Indian mobile number.");
+
+        RuleFor(x => x.Password)
+            .NotEmpty().WithMessage("Password is required.")
+            .MinimumLength(ValidationRules.PasswordMinLength)
+                .WithMessage($"Password must be at least {ValidationRules.PasswordMinLength} characters.")
+            .MaximumLength(ValidationRules.PasswordMaxLength)
+            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches(@"[0-9]").WithMessage("Password must contain at least one number.");
+
+        RuleFor(x => x.CollegeCode)
+            .NotEmpty().WithMessage("College code is required.")
+            .Matches(ValidationRules.CollegeCodePattern)
+                .WithMessage("College code must be uppercase alphanumeric (e.g. IITLKO).")
+            .MinimumLength(ValidationRules.CollegeCodeMinLength)
+            .MaximumLength(ValidationRules.CollegeCodeMaxLength);
+    }
+}
+
+public class VerifyEmailRequestValidator : AbstractValidator<VerifyEmailRequest>
+{
+    public VerifyEmailRequestValidator()
+    {
+        RuleFor(x => x.Token)
+            .NotEmpty().WithMessage("Verification token is required.");
+    }
+}
+
+public class ForgotPasswordRequestValidator : AbstractValidator<ForgotPasswordRequest>
+{
+    public ForgotPasswordRequestValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("A valid email address is required.");
+    }
+}
+
+public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
+{
+    public ResetPasswordRequestValidator()
+    {
+        RuleFor(x => x.Token)
+            .NotEmpty().WithMessage("Reset token is required.");
+
+        RuleFor(x => x.NewPassword)
+            .NotEmpty().WithMessage("New password is required.")
+            .MinimumLength(ValidationRules.PasswordMinLength)
+            .MaximumLength(ValidationRules.PasswordMaxLength)
+            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches(@"[0-9]").WithMessage("Password must contain at least one number.")
+            .Matches(@"[^a-zA-Z0-9]").WithMessage("Password must contain at least one special character.");
+
+        RuleFor(x => x.ConfirmPassword)
+            .NotEmpty().WithMessage("Confirm password is required.")
+            .Equal(x => x.NewPassword).WithMessage("Passwords do not match.");
+    }
+}
+
+public class RefreshTokenRequestValidator : AbstractValidator<RefreshTokenRequest>
+{
+    public RefreshTokenRequestValidator()
+    {
+        RuleFor(x => x.RefreshToken)
+            .NotEmpty().WithMessage("Refresh token is required.");
+    }
+}
+
+public class ChangePasswordRequestValidator : AbstractValidator<ChangePasswordRequest>
+{
+    public ChangePasswordRequestValidator()
+    {
+        RuleFor(x => x.CurrentPassword)
+            .NotEmpty().WithMessage("Current password is required.");
+
+        RuleFor(x => x.NewPassword)
+            .NotEmpty().WithMessage("New password is required.")
+            .MinimumLength(ValidationRules.PasswordMinLength)
+            .MaximumLength(ValidationRules.PasswordMaxLength)
+            .Matches(@"[A-Z]").WithMessage("Password must contain at least one uppercase letter.")
+            .Matches(@"[a-z]").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches(@"[0-9]").WithMessage("Password must contain at least one number.")
+            .NotEqual(x => x.CurrentPassword)
+                .WithMessage("New password must be different from current password.");
+
+        RuleFor(x => x.ConfirmNewPassword)
+            .NotEmpty().WithMessage("Confirm new password is required.")
+            .Equal(x => x.NewPassword).WithMessage("Passwords do not match.");
+    }
+}

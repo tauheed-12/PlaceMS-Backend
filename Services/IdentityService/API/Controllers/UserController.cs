@@ -1,0 +1,88 @@
+using IdentityService.Application.DTOs.Requests;
+using IdentityService.Application.DTOs.Responses;
+using IdentityService.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SharedKernel.Constants;
+using SharedKernel.Extensions;
+using SharedKernel.Wrappers;
+
+namespace IdentityService.API.Controllers;
+
+[ApiController]
+[Route("api/v1/users")]
+[Authorize]
+[Produces("application/json")]
+public class UsersController : ControllerBase
+{
+    private readonly IAuthService _authService;
+    private readonly IUserRepository _userRepository;
+
+    public UsersController(IAuthService authService, IUserRepository userRepository)
+    {
+        _authService = authService;
+        _userRepository = userRepository;
+    }
+
+    /// <summary>
+    /// Register a new Admin, TPO, Coordinator or Recruiter.
+    /// Only SuperAdmin and Admin can call this.
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
+    [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), 201)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 409)]
+    public async Task<IActionResult> RegisterUser(
+        [FromBody] RegisterUserRequest request,
+        CancellationToken ct)
+    {
+        var result = await _authService.RegisterUserAsync(request, ct);
+        return CreatedAtAction(nameof(GetUserById),
+            new { id = result.UserId },
+            ApiResponse<RegisterResponse>.Created(result));
+    }
+
+    /// <summary>Get authenticated user's own profile.</summary>
+    [HttpGet("me")]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
+    public async Task<IActionResult> GetMe(CancellationToken ct)
+    {
+        var userId = User.GetUserId();
+        var user = await _userRepository.GetByIdAsync(userId, ct);
+
+        if (user is null)
+            return NotFound(ApiResponse.Fail("User not found."));
+
+        return Ok(ApiResponse<UserDto>.Ok(MapToDto(user)));
+    }
+
+    /// <summary>Get user by ID. SuperAdmin and Admin only.</summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
+    [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 404)]
+    public async Task<IActionResult> GetUserById(Guid id, CancellationToken ct)
+    {
+        var user = await _userRepository.GetByIdAsync(id, ct);
+
+        if (user is null)
+            return NotFound(ApiResponse.Fail($"User with ID '{id}' not found."));
+
+        return Ok(ApiResponse<UserDto>.Ok(MapToDto(user)));
+    }
+
+    private static UserDto MapToDto(Domain.Entities.User user) => new()
+    {
+        Id = user.Id,
+        FullName = user.FullName,
+        Email = user.Email,
+        PhoneNumber = user.PhoneNumber ?? string.Empty,
+        Role = user.Role.ToString(),
+        VerificationStatus = user.VerificationStatus.ToString(),
+        CollegeId = user.CollegeId,
+        CollegeCode = user.CollegeCode,
+        LastLoginAt = user.LastLoginAt,
+        CreatedAt = user.CreatedAt
+    };
+}
