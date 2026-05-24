@@ -58,6 +58,7 @@ public interface IAdminCollegeScopeService
     Task RemoveCollegeFromAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task<List<CollegeShortDto>> GetCollegesDetailsByAdminIdAsync(Guid adminUserId, CancellationToken ct);
+    Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct);
     Task<List<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminUserId, CancellationToken ct);
 }
 
@@ -113,6 +114,7 @@ public record TpoDetails
     public string Email { get; init; } = string.Empty;
     public VerificationStatus VerificationStatus { get; init; }
     public string PhoneNumber { get; init; } = string.Empty;
+    public Guid CollegeId { get; init; }
     public string CollegeCode { get; init; } = string.Empty;
     public string CollegeName { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }

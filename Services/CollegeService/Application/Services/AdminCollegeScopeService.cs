@@ -38,6 +38,9 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         await _repository.SaveChangesAsync(ct);
     }
 
+    public async Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct)
+        => await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
+
     public async Task<List<CollegeShortDto>> GetCollegesDetailsByAdminIdAsync(Guid adminUserId, CancellationToken ct)
     {
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
@@ -98,22 +101,21 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         // Fetch details for all TPOs
         var tpoDetailsBatch = await _identityClient.GetTpoDetailsByIdsBatchAsync(tpoIds.ToList(), ct)
             ?? new List<TpoDetails>();
-        foreach (var tpoDetail in tpoDetailsBatch)
-        {
-            var tpoDetails = tpoDetailsList.FirstOrDefault(t => t.UserId == tpoDetail.UserId);
-            if (tpoDetails != null)
-            {
-                tpoDetails.FullName = tpoDetail.FullName;
-                tpoDetails.Email = tpoDetail.Email;
-                tpoDetails.PhoneNumber = tpoDetail.PhoneNumber;
-                tpoDetails.VerificationStatus = tpoDetail.VerificationStatus.ToString();
-                tpoDetails.CollegeCode = tpoDetail.CollegeCode;
-                tpoDetails.CollegeName = tpoDetail.CollegeName;
-                tpoDetails.CreatedAt = tpoDetail.CreatedAt;
-            }
-        }
 
-        return tpoDetailsList;
+        return tpoDetailsBatch.Select(tpoDetail => new TpoDetailsDto
+        {
+            UserId = tpoDetail.UserId,
+            FullName = tpoDetail.FullName,
+            Email = tpoDetail.Email,
+            PhoneNumber = tpoDetail.PhoneNumber,
+            CollegeId = tpoDetail.CollegeId,
+            CollegeCode = tpoDetail.CollegeCode,
+            CollegeName = tpoDetail.CollegeName,
+            VerificationStatus = tpoDetail.VerificationStatus.ToString(),
+            IsPrimary = true,
+            IsActive = true,
+            CreatedAt = tpoDetail.CreatedAt
+        }).ToList();
     }
 
     public async Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)

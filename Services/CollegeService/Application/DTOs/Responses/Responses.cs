@@ -66,4 +66,6 @@ public class ValidateCollegeCodeResponseDto
     public VerificationStatus VerificationStatus { get; init; }
     public Guid CollegeId { get; init; }
     public string CollegeName { get; init; } = string.Empty;
+    public string CollegeCode { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
 }

@@ -65,6 +65,7 @@ public class CollegeTpoService : ICollegeTpoService
         var collegeTpo = CollegeTpo.Create(
             collegeId: collegeId,
             tpoId: identityResult.UserId,
+            email: request.Email,
             assignedBy: assignedBy);
 
         await _tpoRepository.AddAsync(collegeTpo, ct);
@@ -98,6 +99,7 @@ public class CollegeTpoService : ICollegeTpoService
         if (tpo.TpoId != userId)
             throw new BusinessRuleException("The specified user is not the primary TPO of this college.");
 
+        tpo.Deactivate();
         _tpoRepository.Update(tpo);
 
         await _tpoRepository.SaveChangesAsync(ct);

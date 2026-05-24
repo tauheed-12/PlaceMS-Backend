@@ -51,7 +51,7 @@ public class CollegeConfiguration : IEntityTypeConfiguration<College>
             .IsRequired();
 
         builder.Property(c => c.AffiliatedBy)
-            .HasColumnName("state")
+            .HasColumnName("affiliated_by")
             .HasMaxLength(ValidationRules.CollegeAffiliatedByMaxLength)
             .IsRequired();
 

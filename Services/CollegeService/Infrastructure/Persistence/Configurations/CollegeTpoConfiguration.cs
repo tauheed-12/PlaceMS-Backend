@@ -1,6 +1,7 @@
 using CollegeService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SharedKernel.Constants;
 
 namespace CollegeService.Infrastructure.Persistence.Configurations;
 
@@ -18,6 +19,11 @@ public class CollegeTpoConfiguration : IEntityTypeConfiguration<CollegeTpo>
 
         builder.Property(c => c.TpoId)
             .HasColumnName("tpo_id")
+            .IsRequired();
+
+        builder.Property(c => c.Email)
+            .HasColumnName("tpo_email")
+            .HasMaxLength(SharedKernel.Constants.ValidationRules.EmailMaxLength)
             .IsRequired();
 
         builder.Property(u => u.IsDeleted)

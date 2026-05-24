@@ -105,10 +105,12 @@ public class CollegeQueryService : ICollegeQueryService
         var college = await _collegeRepository.GetByCodeAsync(code, ct);
         return new ValidateCollegeCodeResponseDto
         {
-            IsValid = college == null,
+            IsValid = college != null,
             VerificationStatus = college == null ? VerificationStatus.Unverified : college.VerificationStatus,
             CollegeId = college?.Id ?? Guid.Empty,
-            CollegeName = college?.Name ?? string.Empty
+            CollegeName = college?.Name ?? string.Empty,
+            CollegeCode = college?.Code ?? string.Empty,
+            IsActive = college?.VerificationStatus != VerificationStatus.Deactivated
         };
     }
 

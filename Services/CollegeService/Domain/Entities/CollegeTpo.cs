@@ -6,24 +6,38 @@ public class CollegeTpo : AggregateRoot
 {
     public Guid CollegeId { get; private set; }
     public Guid TpoId { get; private set; }
+    public string Email { get; private set; } = string.Empty;
     public bool IsPrimary { get; private set; }
     public bool IsActive { get; private set; }
-    public bool? RemovedAt { get; private set; }
+    public bool RemovedAt { get; private set; }
     public Guid AssignedBy { get; private set; }
     public CollegeTpo() { }
 
-    public static CollegeTpo Create(Guid collegeId, Guid tpoId, Guid assignedBy, bool isPrimary = true, bool isActive = true)
+    public static CollegeTpo Create(Guid collegeId, Guid tpoId, string email, Guid assignedBy, bool isPrimary = true, bool isActive = true)
     {
         var collegeTpo = new CollegeTpo
         {
             CollegeId = collegeId,
             TpoId = tpoId,
+            Email = email.Trim().ToLowerInvariant(),
             IsPrimary = isPrimary,
             IsActive = isActive,
+            RemovedAt = false,
             AssignedBy = assignedBy
         };
 
         collegeTpo.SetUpdatedAt();
         return collegeTpo;
+    }
+
+    public void Deactivate()
+    {
+        if (!IsActive)
+            return;
+
+        IsActive = false;
+        IsPrimary = false;
+        RemovedAt = true;
+        SetUpdatedAt();
     }
 }

@@ -1,7 +1,17 @@
+using CollegeService.Infrastructure.Extensions;
+using CollegeService.Application.DTOs.Responses;
+using CollegeService.Application.Interfaces;
+using SharedKernel.Wrappers;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services
+    .AddSettings(builder.Configuration)
+    .AddDatabase(builder.Configuration)
+    .AddApplicationServices()
+    .AddHttpClients(builder.Configuration);
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -16,6 +26,28 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.MapGet("/api/v1/colleges/validate/{code}", async (string code, ICollegeRepository collegeRepository, CancellationToken ct) =>
+{
+    if (string.IsNullOrWhiteSpace(code))
+        return Results.BadRequest(ApiResponse.Fail("College code is required."));
+
+    var college = await collegeRepository.GetByCodeAsync(code, ct);
+    if (college is null)
+        return Results.NotFound(ApiResponse.Fail($"College with code '{code}' not found."));
+
+    var response = new ValidateCollegeCodeResponseDto
+    {
+        IsValid = true,
+        VerificationStatus = college.VerificationStatus,
+        CollegeId = college.Id,
+        CollegeName = college.Name,
+        CollegeCode = college.Code,
+        IsActive = college.VerificationStatus != SharedKernel.Enums.VerificationStatus.Deactivated
+    };
+
+    return Results.Ok(ApiResponse<ValidateCollegeCodeResponseDto>.Ok(response));
+});
+
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -23,7 +55,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
@@ -33,8 +65,7 @@ app.MapGet("/weatherforecast", () =>
         .ToArray();
     return forecast;
 })
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+.WithName("GetWeatherForecast");
 
 app.Run();
 
