@@ -1,6 +1,7 @@
 using CollegeService.Application.DTOs.Responses;
 using CollegeService.Application.Interfaces;
 using CollegeService.Domain.Entities;
+using SharedKernel.Exceptions;
 
 namespace CollegeService.Application.Services;
 
@@ -19,14 +20,24 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         _identityClient = identityClient;
     }
 
-    public async Task AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)
+    public async Task<AdminCollegeScopeResponseDto> AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)
     {
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
-        if (collegeIds.Contains(collegeId)) return; // Already assigned, no action needed
+        if (collegeIds.Contains(collegeId)) return new AdminCollegeScopeResponseDto(); // Already assigned, no action needed
+
+        var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
+            ?? throw new NotFoundException("College not found.");
 
         var newScope = AdminCollegeScope.Create(adminUserId, collegeId);
         await _repository.AddScopeAsync(newScope, ct);
         await _repository.SaveChangesAsync(ct);
+        return new AdminCollegeScopeResponseDto
+        {
+            AdminId = adminUserId,
+            CollegeId = collegeId,
+            CollegeName = college.Name,
+            CollegeCode = college.Code
+        };
     }
 
     public async Task RemoveCollegeFromAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)

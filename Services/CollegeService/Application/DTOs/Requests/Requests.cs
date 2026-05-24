@@ -64,3 +64,9 @@ public class RegisterTpoIdentityRequestDto
 
     public UserRole Role { get; set; } = UserRole.TPO;
 }
+
+public record AdminCollegeScopeRequestDto
+{
+    public Guid AdminId { get; init; }
+    public Guid CollegeId { get; init; }
+}

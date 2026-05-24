@@ -59,7 +59,7 @@ public interface ICollegeRepository
 
 public interface IAdminCollegeScopeService
 {
-    Task AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
+    Task<AdminCollegeScopeResponseDto> AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task RemoveCollegeFromAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct);
     Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct);
