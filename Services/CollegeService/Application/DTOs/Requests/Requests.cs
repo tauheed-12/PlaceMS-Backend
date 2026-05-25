@@ -31,15 +31,23 @@ public record UpdateCollegeRequestDto
     public string Pincode { get; init; } = string.Empty;
 }
 
-public record CollegeFilterRequestDto
+public class CollegeFilterRequestDto
 {
-    public string? Search { get; init; }
-    public string? State { get; init; }
-    public string? City { get; init; }
-    public AccountStatus? AccountStatus { get; init; }
-    public bool? HasTpoAssigned { get; init; }
-    public int PageNumber { get; init; } = 1;
-    public int PageSize { get; init; } = 10;
+    public string? Search { get; set; }
+    public string? State { get; set; }
+    public string? City { get; set; }
+    public AccountStatus? AccountStatus { get; set; }
+    public bool? HasTpoAssigned { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+}
+
+public class TpoFilterRequestDto
+{
+    public string? Search { get; set; }
+    public bool? IsPrimary { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
 }
 
 public record CreateTpoRequestDto

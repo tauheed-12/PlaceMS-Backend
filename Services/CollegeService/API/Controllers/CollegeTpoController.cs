@@ -60,4 +60,15 @@ public class CollegeTpoController : ControllerBase
 
         return Ok(ApiResponse<TpoDetailsDto>.Ok(result));
     }
+
+    // Get all TPOs with filtering and pagination
+    [HttpGet("list")]
+    [Authorize(Roles = Roles.SuperAdminOrAdmin)]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    public async Task<IActionResult> GetTpos([FromQuery] TpoFilterRequestDto filter, CancellationToken ct)
+    {
+        var result = await _collegeTpoService.GetTposAsync(filter, ct);
+        return Ok(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>.Ok(result));
+    }
 }

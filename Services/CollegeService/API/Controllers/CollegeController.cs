@@ -82,18 +82,6 @@ public class CollegeController : ControllerBase
     }
 
 
-    // Get college details under a admin
-    // [HttpGet("admin/{id}")]
-    // [Authorize(Roles = Roles.SuperAdminOrAdmin)]
-    // [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
-    // [ProducesResponseType(typeof(ApiResponse), 404)]
-    // public async Task<IActionResult> GetCollegesByAdminId(CancellationToken ct, [FromRoute] Guid id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-    // {
-    //     var result = await _collegeQueryService.GetCollegesByAdminIdAsync(id, pageNumber, pageSize, ct);
-    //     return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(result));
-    // }
-
-
     // Get all colleges  
     [HttpGet]
     [Authorize(Roles = Roles.SuperAdmin)]
@@ -125,6 +113,7 @@ public class CollegeController : ControllerBase
         var result = await _collegeQueryService.GetFilteredCollegesAsync(filter, ct);
         return Ok(result);
     }
+
 
     // Validate college by code
     [HttpGet("validate")]

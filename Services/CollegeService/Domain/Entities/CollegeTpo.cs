@@ -6,6 +6,8 @@ public class CollegeTpo : AggregateRoot
 {
     public Guid CollegeId { get; private set; }
     public Guid TpoId { get; private set; }
+    public string FullName { get; private set; } = string.Empty;
+    public string CollegeName { get; private set; } = string.Empty;
     public string Email { get; private set; } = string.Empty;
     public bool IsPrimary { get; private set; }
     public bool IsActive { get; private set; }
@@ -13,11 +15,13 @@ public class CollegeTpo : AggregateRoot
     public Guid AssignedBy { get; private set; }
     public CollegeTpo() { }
 
-    public static CollegeTpo Create(Guid collegeId, Guid tpoId, string email, Guid assignedBy, bool isPrimary = true, bool isActive = true)
+    public static CollegeTpo Create(Guid collegeId, Guid tpoId, string fullName, string collegeName, string email, Guid assignedBy, bool isPrimary = true, bool isActive = true)
     {
         var collegeTpo = new CollegeTpo
         {
             CollegeId = collegeId,
+            FullName = fullName,
+            CollegeName = collegeName,
             TpoId = tpoId,
             Email = email.Trim().ToLowerInvariant(),
             IsPrimary = isPrimary,

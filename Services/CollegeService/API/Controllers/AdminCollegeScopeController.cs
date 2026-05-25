@@ -41,21 +41,45 @@ public class AdminCollegeScopeController : ControllerBase
     }
 
 
+    // Super admin can view all TPOs and colleges under an admin's scope
     [HttpGet("{adminId}/tpos")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetTposByAdminId(Guid adminId, CancellationToken ct)
+    public async Task<IActionResult> GetTposByAdminId(Guid adminId, CancellationToken ct, TpoFilterRequestDto filter)
     {
-        var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, 1, 10, ct);
+        var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, filter, ct);
         return Ok(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>.Ok(tpoDetails));
     }
+
 
     [HttpGet("{adminId}/colleges")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetCollegesByAdminId(Guid adminId, CancellationToken ct)
+    public async Task<IActionResult> GetCollegesByAdminId(Guid adminId, CancellationToken ct, CollegeFilterRequestDto filter)
     {
-        var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, 1, 10, ct);
+        var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, filter, ct);
+        return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(collegeDetails));
+    }
+
+
+    [HttpGet("me/tpos")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    public async Task<IActionResult> GetTposByAdminId(CancellationToken ct, TpoFilterRequestDto filter)
+    {
+        var adminId = Guid.NewGuid(); // Replace with actual admin ID retrieval logic
+        var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, filter, ct);
+        return Ok(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>.Ok(tpoDetails));
+    }
+
+
+    [HttpGet("me/colleges")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    public async Task<IActionResult> GetCollegesByAdminId(CancellationToken ct, CollegeFilterRequestDto filter)
+    {
+        var adminId = Guid.NewGuid(); // Replace with actual admin ID retrieval logic
+        var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, filter, ct);
         return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(collegeDetails));
     }
 }

@@ -5,6 +5,7 @@ using CollegeService.Domain.Entities;
 using CollegeService.Application.Interfaces.Clients;
 using SharedKernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using CollegeService.Application.DTOs.Requests;
 
 namespace CollegeService.Application.Services;
 
@@ -57,22 +58,47 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         return await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
     }
 
-    public async Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(Guid adminId, int pageNumber, int pageSize, CancellationToken ct)
+    public async Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(Guid adminId, CollegeFilterRequestDto filter, CancellationToken ct)
     {
-        if (pageNumber <= 0) pageNumber = 1;
+        if (filter.PageNumber <= 0) filter.PageNumber = 1;
 
-        if (pageSize <= 0) pageSize = 10;
+        if (filter.PageSize <= 0) filter.PageSize = 10;
 
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminId, ct);
 
         var query = _collegeRepository.GetQueryable().Where(c => collegeIds.Contains(c.Id));
+
+        // Search filter
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+
+            query = query.Where(c =>
+                c.Name.ToLower().Contains(search) ||
+                c.Code.ToLower().Contains(search));
+        }
+
+        // State filter
+        if (!string.IsNullOrWhiteSpace(filter.State))
+        {
+            query = query.Where(c =>
+                c.State == filter.State);
+        }
+
+        // Status filter
+        if (filter.AccountStatus.HasValue)
+        {
+            query = query.Where(c =>
+                c.AccountStatus == filter.AccountStatus.Value);
+        }
+
         var totalCount = await query.CountAsync(ct);
 
         // Paginated data
         var colleges = await query
             .OrderBy(c => c.Name)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
             .ToListAsync(ct);
 
         var pagedCollegeIds = colleges
@@ -94,78 +120,108 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
 
         return new PaginatedResponseDto<CollegeShortDto>
         {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
+            PageNumber = filter.PageNumber,
+            PageSize = filter.PageSize,
             TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            TotalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize),
             Items = result
         };
     }
 
-    public async Task<PaginatedResponseDto<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminId, int pageNumber, int pageSize, CancellationToken ct)
+    public async Task<PaginatedResponseDto<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminId, TpoFilterRequestDto filter, CancellationToken ct)
     {
-        if (pageNumber <= 0) pageNumber = 1;
+        if (filter.PageNumber <= 0)
+            filter.PageNumber = 1;
 
-        if (pageSize <= 0) pageSize = 10;
+        if (filter.PageSize <= 0)
+            filter.PageSize = 10;
 
-        var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminId, ct);
+        var collegeIds = await _repository
+            .GetCollegeIdsByAdminIdAsync(adminId, ct);
 
-        var query = _collegeRepository.GetQueryable().Where(c => collegeIds.Contains(c.Id));
+        var query = _tpoRepository
+            .GetQueryable()
+            .Where(t => collegeIds.Contains(t.CollegeId));
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+
+            query = query.Where(t =>
+                t.FullName.ToLower().Contains(search) ||
+                t.CollegeName.ToLower().Contains(search));
+        }
+
+        if (filter.IsPrimary.HasValue)
+        {
+            query = query.Where(t =>
+                t.IsPrimary == filter.IsPrimary.Value);
+        }
+
         var totalCount = await query.CountAsync(ct);
 
-        var colleges = await query
-            .OrderBy(c => c.Name)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+        var tpos = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
             .ToListAsync(ct);
 
-        var pagedCollegeIds = colleges
-        .Select(c => c.Id)
-        .ToList();
+        var collegeIdsFromTpos = tpos
+            .Select(t => t.CollegeId)
+            .Distinct()
+            .ToList();
 
-        var tpos = await _tpoRepository.GetPrimaryTposByCollegeIdsAsync(pagedCollegeIds, ct);
+        var colleges = await _collegeRepository
+            .GetByIdsAsync(collegeIdsFromTpos, ct);
 
-        var userDetails = await _identityClient.GetTpoDetailsByIdsBatchAsync(tpos.Select(t => t.TpoId), ct)
+        var collegeMap = colleges
+            .ToDictionary(c => c.Id);
+
+        var userDetails = await _identityClient
+            .GetTpoDetailsByIdsBatchAsync(
+                tpos.Select(t => t.TpoId),
+                ct)
             ?? new List<TpoDetails>();
 
-        var userMap = userDetails.ToDictionary(x => x.UserId);
+        var userMap = userDetails
+            .ToDictionary(x => x.UserId);
 
         var result = tpos
-        .Where(t => userMap.ContainsKey(t.TpoId))
-        .Select(t =>
-        {
-            var user = userMap[t.TpoId];
-
-            var college = colleges
-                .First(c => c.Id == t.CollegeId);
-
-            return new TpoDetailsDto
+            .Where(t =>
+                userMap.ContainsKey(t.TpoId) &&
+                collegeMap.ContainsKey(t.CollegeId))
+            .Select(t =>
             {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
+                var user = userMap[t.TpoId];
 
-                CollegeId = college.Id,
-                CollegeName = college.Name,
-                CollegeCode = college.Code,
+                var college = collegeMap[t.CollegeId];
 
-                IsPrimary = t.IsPrimary,
-                IsActive = t.IsActive
-            };
-        })
-        .ToList();
+                return new TpoDetailsDto
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber,
+
+                    CollegeId = college.Id,
+                    CollegeName = college.Name,
+                    CollegeCode = college.Code,
+
+                    IsPrimary = t.IsPrimary,
+                    IsActive = t.IsActive
+                };
+            })
+            .ToList();
 
         return new PaginatedResponseDto<TpoDetailsDto>
         {
             Items = result,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
+            PageNumber = filter.PageNumber,
+            PageSize = filter.PageSize,
             TotalCount = totalCount,
             TotalPages = (int)Math.Ceiling(
-                totalCount / (double)pageSize)
+                totalCount / (double)filter.PageSize)
         };
-
     }
 
     public async Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)

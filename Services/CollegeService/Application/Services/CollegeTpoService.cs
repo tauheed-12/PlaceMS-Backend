@@ -67,6 +67,8 @@ public class CollegeTpoService : ICollegeTpoService
 
         var collegeTpo = CollegeTpo.Create(
             collegeId: request.CollegeId,
+            collegeName: college.Name,
+            fullName: request.FullName,
             tpoId: identityResult.UserId,
             email: request.Email,
             assignedBy: assignedBy);
@@ -134,6 +136,81 @@ public class CollegeTpoService : ICollegeTpoService
     {
         var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(collegeId, ct);
         return tpo is not null && tpo.TpoId == userId;
+    }
+
+
+    // fetch all TPOs with pagination and optional filters
+    public async Task<PaginatedResponseDto<TpoDetailsDto>> GetTposAsync(TpoFilterRequestDto filter, CancellationToken ct)
+    {
+        if (filter.PageNumber <= 0)
+            filter.PageNumber = 1;
+
+        if (filter.PageSize <= 0)
+            filter.PageSize = 10;
+
+        // Step 1: Fetch paginated TPO mappings
+        var (tpos, totalCount) = await _tpoRepository.GetTposAsync(filter, ct);
+
+        // Step 2: Fetch college details
+        var collegeIds = tpos
+            .Select(t => t.CollegeId)
+            .Distinct()
+            .ToList();
+
+        var colleges = await _collegeRepository
+            .GetByIdsAsync(collegeIds, ct);
+
+        var collegeMap = colleges
+            .ToDictionary(c => c.Id);
+
+        // Step 3: Fetch user details from IdentityService
+        var userDetails = await _identityClient
+            .GetTpoDetailsByIdsBatchAsync(
+                tpos.Select(t => t.TpoId),
+                ct)
+            ?? new List<TpoDetails>();
+
+        var userMap = userDetails
+            .ToDictionary(u => u.UserId);
+
+        // Step 4: Merge response
+        var result = tpos
+            .Where(t =>
+                userMap.ContainsKey(t.TpoId) &&
+                collegeMap.ContainsKey(t.CollegeId))
+            .Select(t =>
+            {
+                var user = userMap[t.TpoId];
+
+                var college = collegeMap[t.CollegeId];
+
+                return new TpoDetailsDto
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber,
+
+                    CollegeId = college.Id,
+                    CollegeName = college.Name,
+                    CollegeCode = college.Code,
+
+                    IsPrimary = t.IsPrimary,
+                    IsActive = t.IsActive
+                };
+            })
+            .ToList();
+
+        // Step 5: Return paginated response
+        return new PaginatedResponseDto<TpoDetailsDto>
+        {
+            Items = result,
+            PageNumber = filter.PageNumber,
+            PageSize = filter.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(
+                totalCount / (double)filter.PageSize)
+        };
     }
 
     private static TpoDetailsDto MapToDetailsDto(TpoDetails tpo, College college, bool isPrimary)
