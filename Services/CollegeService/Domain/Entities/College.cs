@@ -17,12 +17,13 @@ public class College : AggregateRoot
     public string City { get; private set; } = string.Empty;
     public string State { get; private set; } = string.Empty;
     public string Pincode { get; private set; } = string.Empty;
-    public string RegisteredBy { get; private set; } = string.Empty;
+    public Guid RegisteredBy { get; private set; }
+    public Guid? UpdatedBy { get; private set; }
     public AccountStatus AccountStatus { get; private set; } = AccountStatus.Active;
 
     public College() { }
 
-    public static College Create(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, string createdBy)
+    public static College Create(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, Guid createdBy)
     {
         var college = new College
         {
@@ -38,13 +39,13 @@ public class College : AggregateRoot
             Pincode = pincode.Trim(),
             RegisteredBy = createdBy,
         };
-        college.RaiseDomainEvent(new CollegeRegisterDomainEvent(college.Id, college.Email, college.Name, college.Code, college.RegisteredBy));
+        college.RaiseDomainEvent(new CollegeCreatedDomainEvent(college.Id, college.Name, college.Code, createdBy));
         college.SetUpdatedAt();
 
         return college;
     }
 
-    public void UpdateDetails(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, string updatedBy)
+    public void UpdateDetails(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, Guid updatedBy)
     {
         Name = name.Trim();
         Code = code.Trim().ToUpperInvariant();
@@ -56,31 +57,31 @@ public class College : AggregateRoot
         City = city.Trim();
         State = state.Trim();
         Pincode = pincode.Trim();
-        RegisteredBy = updatedBy;
+        UpdatedBy = updatedBy;
         SetUpdatedAt();
     }
 
     // ------------ Status Management --------------------
-    public void Deactivate()
+    public void Deactivate(Guid deactivatedBy)
     {
         if (AccountStatus == AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("College is already deactivated");
 
         AccountStatus = AccountStatus.Deactivated;
+        UpdatedBy = deactivatedBy;
         SetUpdatedAt();
+
+        RaiseDomainEvent(new CollegeDeactivatedDomainEvent(Id, Name, Code, deactivatedBy));
     }
 
-    public void Reactivate()
+    public void Reactivate(Guid activatedBy)
     {
         if (AccountStatus != AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("College is not Deactivated");
 
         AccountStatus = AccountStatus.Active;
+        UpdatedBy = activatedBy;
         SetUpdatedAt();
+        RaiseDomainEvent(new CollegeActivatedDomainEvent(Id, Name, Code, activatedBy));
     }
-
-    // ------ Generate secure token --------------
-    public static string GenerateSecureToken()
-        => Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-            + Convert.ToBase64String(Guid.NewGuid().ToByteArray());
 }

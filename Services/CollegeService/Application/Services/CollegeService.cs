@@ -1,10 +1,10 @@
 using SharedKernel.Exceptions;
-
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.DTOs.Responses;
 using CollegeService.Domain.Entities;
 using CollegeService.Application.Interfaces.Services;
 using CollegeService.Application.Interfaces.Repositories;
+using CollegeService.Application.Interfaces;
 
 namespace CollegeService.Application.Services;
 
@@ -12,16 +12,17 @@ public class CollegeService : ICollegeService
 {
     private readonly ICollegeRepository _collegeRepo;
     private readonly ILogger<CollegeService> _logger;
+    private readonly IDomainEventPublisher _eventPublisher;
 
-    public CollegeService(ICollegeRepository collegeRepo, ILogger<CollegeService> logger)
+    public CollegeService(ICollegeRepository collegeRepo, ILogger<CollegeService> logger, IDomainEventPublisher eventPublisher)
     {
         _collegeRepo = collegeRepo;
         _logger = logger;
+        _eventPublisher = eventPublisher;
     }
-    public async Task<CreateCollegeResponseDto> RegisterAsync(CreateCollegeRequestDto request, string registeredBy, CancellationToken ct)
-    {
-        string userName = "Hello"; // TODO: update it from jwt token
 
+    public async Task<CreateCollegeResponseDto> RegisterAsync(CreateCollegeRequestDto request, Guid registeredBy, CancellationToken ct)
+    {
         if (await _collegeRepo.EmailExistsAsync(request.Email, ct))
             throw new ConflictException("college", "email", request.Email);
 
@@ -39,21 +40,23 @@ public class CollegeService : ICollegeService
             request.City,
             request.State,
             request.Pincode,
-            userName
+            registeredBy
             );
 
         await _collegeRepo.AddAsync(college, ct);
+
+        var events = college.DomainEvents.ToList();
         await _collegeRepo.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        college.ClearDomainEvents();
 
         _logger.LogInformation("College {CollegeId} registered with name {Name}", college.Id, request.Name);
 
         return BuildCollegeResponse(college);
     }
 
-    public async Task<UpdateCollegeResponseDto> UpdateAsync(UpdateCollegeRequestDto request, string updatedBy, CancellationToken ct)
+    public async Task<UpdateCollegeResponseDto> UpdateAsync(UpdateCollegeRequestDto request, Guid updatedBy, CancellationToken ct)
     {
-        string userName = "Hello"; // TODO: update it from jwt token
-
         var existingCollege = await _collegeRepo.GetByIdAsync(request.Id, ct) ??
             throw new NotFoundException("College not found");
 
@@ -74,7 +77,7 @@ public class CollegeService : ICollegeService
             request.City,
             request.State,
             request.Pincode,
-            userName
+            updatedBy
         );
 
         _collegeRepo.Update(existingCollege);
@@ -97,26 +100,38 @@ public class CollegeService : ICollegeService
         };
     }
 
-    public async Task DeactivateCollegeAsync(Guid collegeId, CancellationToken ct)
+
+    public async Task DeactivateCollegeAsync(Guid collegeId, Guid deactivatedBy, CancellationToken ct)
     {
         var existingCollege = await _collegeRepo.GetByIdAsync(collegeId, ct) ??
             throw new NotFoundException("College not found");
 
-        existingCollege.Deactivate();
-        await _collegeRepo.SaveChangesAsync(ct);
-        _logger.LogInformation("College {CollegeId} deactivated successfully", existingCollege.Id);
+        existingCollege.Deactivate(deactivatedBy);
 
+        var events = existingCollege.DomainEvents.ToList();
+        await _collegeRepo.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        existingCollege.ClearDomainEvents();
+
+        _logger.LogInformation("College {CollegeId} deactivated successfully", existingCollege.Id);
     }
 
-    public async Task ReactivateCollegeAsync(Guid collegeId, CancellationToken ct)
+
+    public async Task ReactivateCollegeAsync(Guid collegeId, Guid activatedBy, CancellationToken ct)
     {
         var existingCollege = await _collegeRepo.GetByIdAsync(collegeId, ct) ??
             throw new NotFoundException("College not found");
 
-        existingCollege.Reactivate();
+        existingCollege.Reactivate(activatedBy);
+
+        var events = existingCollege.DomainEvents.ToList();
         await _collegeRepo.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        existingCollege.ClearDomainEvents();
+
         _logger.LogInformation("College {CollegeId} reactivated successfully", existingCollege.Id);
     }
+
 
     private static CreateCollegeResponseDto BuildCollegeResponse(College college)
         => new()

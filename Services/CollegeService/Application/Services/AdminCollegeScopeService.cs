@@ -6,6 +6,7 @@ using CollegeService.Application.Interfaces.Clients;
 using SharedKernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using CollegeService.Application.DTOs.Requests;
+using CollegeService.Application.Interfaces;
 
 namespace CollegeService.Application.Services;
 
@@ -15,26 +16,39 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
     private readonly ICollegeRepository _collegeRepository;
     private readonly ICollegeTpoRepository _tpoRepository;
     private readonly IIdentityServiceClient _identityClient;
+    private readonly IDomainEventPublisher _eventPublisher;
 
-    public AdminCollegeScopeService(IAdminCollegeScopeRepository repository, ICollegeRepository collegeRepository, ICollegeTpoRepository tpoRepository, IIdentityServiceClient identityClient)
+    public AdminCollegeScopeService(
+        IAdminCollegeScopeRepository repository,
+        ICollegeRepository collegeRepository,
+        ICollegeTpoRepository tpoRepository,
+        IIdentityServiceClient identityClient,
+        IDomainEventPublisher domainEventPublisher)
     {
         _repository = repository;
         _collegeRepository = collegeRepository;
         _tpoRepository = tpoRepository;
         _identityClient = identityClient;
+        _eventPublisher = domainEventPublisher;
     }
 
     public async Task<AdminCollegeScopeResponseDto> AssignCollegeToAdminAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)
     {
+        Guid CreatedBy = Guid.NewGuid();
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
         if (collegeIds.Contains(collegeId)) return new AdminCollegeScopeResponseDto(); // Already assigned, no action needed
 
         var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
             ?? throw new NotFoundException("College not found.");
 
-        var newScope = AdminCollegeScope.Create(adminUserId, collegeId);
+        var newScope = AdminCollegeScope.Create(adminUserId, college.Name, college.Code, collegeId, CreatedBy);
         await _repository.AddScopeAsync(newScope, ct);
+
+        var events = college.DomainEvents.ToList();
         await _repository.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        college.ClearDomainEvents();
+
         return new AdminCollegeScopeResponseDto
         {
             AdminId = adminUserId,
@@ -49,8 +63,16 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         var existingScope = await _repository.GetScopeAsync(adminUserId, collegeId, ct);
         if (existingScope == null) return; // Scope not found, no action needed
 
-        _repository.RemoveScope(existingScope);
+        Guid removedBy = Guid.NewGuid(); // TODO: Update it by jwt token
+
+        existingScope.RemoveScope(removedBy);
+
+        var events = existingScope.DomainEvents.ToList();
         await _repository.SaveChangesAsync(ct);
+
+        _repository.RemoveScope(existingScope);
+        await _eventPublisher.PublishAsync(events, ct);
+        existingScope.ClearDomainEvents();
     }
 
     public async Task<List<Guid>> GetCollegesIdsByAdminIdAsync(Guid adminUserId, CancellationToken ct)

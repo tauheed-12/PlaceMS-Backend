@@ -36,7 +36,6 @@ public class AuthService : IAuthService
     }
 
     // ── Login ───────────────────────────────────────────────────────
-
     public async Task<AuthResponse> LoginAsync(LoginRequest request, string ipAddress, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByEmailWithTokensAsync(request.Email, ct)
@@ -78,7 +77,6 @@ public class AuthService : IAuthService
     }
 
     // ── Register (Admin/SuperAdmin adding staff) ─────────────────────
-
     public async Task<RegisterResponse> RegisterUserAsync(RegisterUserRequest request, CancellationToken ct = default)
     {
         if (await _userRepository.EmailExistsAsync(request.Email, ct))
@@ -127,7 +125,6 @@ public class AuthService : IAuthService
     }
 
     // ── Student Self-Registration ────────────────────────────────────
-
     public async Task<RegisterResponse> RegisterStudentAsync(StudentRegisterRequest request, CancellationToken ct = default)
     {
         if (await _userRepository.EmailExistsAsync(request.Email, ct))
@@ -166,7 +163,6 @@ public class AuthService : IAuthService
     }
 
     // ── Email Verification ───────────────────────────────────────────
-
     public async Task<VerifyEmailResponse> VerifyEmailAsync(string token, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByVerificationTokenAsync(token, ct)
@@ -197,7 +193,6 @@ public class AuthService : IAuthService
     }
 
     // ── Password Reset ───────────────────────────────────────────────
-
     public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default)
     {
         // Never reveal whether email exists
@@ -228,7 +223,6 @@ public class AuthService : IAuthService
     }
 
     // ── Token Refresh ────────────────────────────────────────────────
-
     public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request, string ipAddress, CancellationToken ct = default)
     {
         // We need to find which user owns this refresh token
@@ -249,7 +243,6 @@ public class AuthService : IAuthService
     }
 
     // ── Logout ───────────────────────────────────────────────────────
-
     public async Task LogoutAsync(string refreshToken, CancellationToken ct = default)
     {
         var user = await FindUserByRefreshTokenAsync(refreshToken, ct);
@@ -271,7 +264,6 @@ public class AuthService : IAuthService
     }
 
     // ── Change Password ──────────────────────────────────────────────
-
     public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdWithTokensAsync(userId, ct)
@@ -291,7 +283,6 @@ public class AuthService : IAuthService
     }
 
     // ── Private Helpers ──────────────────────────────────────────────
-
     private async Task<User?> FindUserByRefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
         // This requires a custom repo query since EF needs to traverse the token collection

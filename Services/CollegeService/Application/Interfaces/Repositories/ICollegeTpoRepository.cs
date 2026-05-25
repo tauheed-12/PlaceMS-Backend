@@ -12,7 +12,7 @@ public interface ICollegeTpoRepository
     Task<List<Guid>> GetCollegeIdsHavingPrimaryTpoAsync(List<Guid> collegeIds, CancellationToken ct);
     Task<List<CollegeTpo>> GetPrimaryTposByCollegeIdsAsync(List<Guid> pagedCollegeIds, CancellationToken ct);
     // Task<(IEnumerable<College> Items, int TotalCount)> GetFilteredAsync(CollegeFilterRequestDto filter, CancellationToken ct = default);
-    Task<IQueryable<CollegeTpo>> GetQueryable();
+    public IQueryable<CollegeTpo> GetQueryable();
     Task AddAsync(CollegeTpo collegeTpo, CancellationToken ct = default);
     void Update(CollegeTpo collegeTpo);
     Task<int> SaveChangesAsync(CancellationToken ct = default);

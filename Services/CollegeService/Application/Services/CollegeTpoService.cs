@@ -77,23 +77,25 @@ public class CollegeTpoService : ICollegeTpoService
 
         await _tpoRepository.SaveChangesAsync(ct);
 
-        // var events = college.DomainEvents.ToList();
-        // await _eventPublisher.PublishAsync(events, ct);
-        // college.ClearDomainEvents();
         var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(request.CollegeId, ct)
             ?? throw new NotFoundException("TPO", college.Name);
 
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
-            ?? throw new NotFoundException("");
+            ?? throw new NotFoundException("TPO not found");
 
         _logger.LogInformation("TPO {TpoUserId} ({TpoEmail}) assigned to college {CollegeId} by admin {AssignedBy}",
             identityResult.UserId, request.Email, request.CollegeId, assignedBy);
+
+        var events = college.DomainEvents.ToList();
+        await _eventPublisher.PublishAsync(events, ct);
+        college.ClearDomainEvents();
 
         return MapToDetailsDto(tpoDetails, college, tpo.IsPrimary);
     }
 
     public async Task RemoveTpoAsync(Guid collegeId, Guid userId, CancellationToken ct)
     {
+        Guid deactivatedBy = Guid.NewGuid(); // TODO: update this from jwt token
         var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
             ?? throw new NotFoundException("College", collegeId);
 
@@ -104,14 +106,14 @@ public class CollegeTpoService : ICollegeTpoService
         if (tpo.TpoId != userId)
             throw new BusinessRuleException("The specified user is not the primary TPO of this college.");
 
-        tpo.Deactivate();
+        tpo.Deactivate(deactivatedBy);
         _tpoRepository.Update(tpo);
 
         await _tpoRepository.SaveChangesAsync(ct);
 
-        // var events = college.DomainEvents.ToList();
-        // await _eventPublisher.PublishAsync(events, ct);
-        // college.ClearDomainEvents();
+        var events = college.DomainEvents.ToList();
+        await _eventPublisher.PublishAsync(events, ct);
+        college.ClearDomainEvents();
 
         _logger.LogInformation("TPO {TpoUserId} removed from college {CollegeId}", userId, collegeId);
     }
@@ -212,6 +214,51 @@ public class CollegeTpoService : ICollegeTpoService
                 totalCount / (double)filter.PageSize)
         };
     }
+
+    public async Task<TpoDetailsDto> ActivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
+    {
+        var details = await _identityClient.ActivateTpoAccount(tpoId, ct)
+            ?? throw new NotFoundException("TPO not found");
+
+        var collegeTpoDetails = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(tpoId, ct);
+
+        return new TpoDetailsDto
+        {
+            UserId = details.UserId,
+            FullName = details.FullName,
+            Email = details.Email,
+            PhoneNumber = details.PhoneNumber,
+            CollegeId = details.CollegeId,
+            VerificationStatus = details.VerificationStatus,
+            AccountStatus = details.AccountStatus,
+            CollegeCode = details.CollegeCode,
+            CollegeName = details.CollegeName,
+            // IsPrimary = collegeTpoDetails?.IsPrimary,
+        };
+    }
+
+    public async Task<TpoDetailsDto> DeactivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
+    {
+        var details = await _identityClient.DeactivateTpoAccount(tpoId, ct)
+            ?? throw new NotFoundException("TPO not found");
+
+        var collegeTpoDetails = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(tpoId, ct);
+
+        return new TpoDetailsDto
+        {
+            UserId = details.UserId,
+            FullName = details.FullName,
+            Email = details.Email,
+            PhoneNumber = details.PhoneNumber,
+            CollegeId = details.CollegeId,
+            VerificationStatus = details.VerificationStatus,
+            AccountStatus = details.AccountStatus,
+            CollegeCode = details.CollegeCode,
+            CollegeName = details.CollegeName,
+            // IsPrimary = collegeTpoDetails?.IsPrimary,
+        };
+    }
+
 
     private static TpoDetailsDto MapToDetailsDto(TpoDetails tpo, College college, bool isPrimary)
         => new()

@@ -9,6 +9,8 @@ public interface IIdentityServiceClient
     Task<TpoRegistrationResult?> RegisterTpoAsync(RegisterTpoIdentityRequestDto request, CancellationToken ct);
     Task<TpoDetails?> GetTpoDetails(Guid tpoId, CancellationToken ct);
     Task<List<TpoDetails>?> GetTpoDetailsByIdsBatchAsync(IEnumerable<Guid> tpoIds, CancellationToken ct);
+    Task<TpoDetails?> ActivateTpoAccount(Guid tpoId, CancellationToken ct);
+    Task<TpoDetails?> DeactivateTpoAccount(Guid tpoId, CancellationToken ct);
 }
 
 public record TpoRegistrationResult
