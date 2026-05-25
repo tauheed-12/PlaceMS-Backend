@@ -36,7 +36,7 @@ public record CollegeFilterRequestDto
     public string? Search { get; init; }
     public string? State { get; init; }
     public string? City { get; init; }
-    public VerificationStatus? VerificationStatus { get; init; }
+    public AccountStatus? AccountStatus { get; init; }
     public bool? HasTpoAssigned { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
@@ -44,6 +44,9 @@ public record CollegeFilterRequestDto
 
 public record CreateTpoRequestDto
 {
+    public Guid CollegeId { get; init; }
+    public string CollegeCode { get; init; } = string.Empty;
+    public string CollegeName { get; init; } = string.Empty;
     public string FullName { get; init; } = string.Empty;
     public string Email { get; init; } = string.Empty;
     public string PhoneNumber { get; init; } = string.Empty;

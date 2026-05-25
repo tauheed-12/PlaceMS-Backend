@@ -1,5 +1,5 @@
 using CollegeService.Application.DTOs.Requests;
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Repositories;
 using CollegeService.Domain.Entities;
 using CollegeService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -82,8 +82,8 @@ public class CollegeRepository : ICollegeRepository
         if (!string.IsNullOrWhiteSpace(filter.City))
             query = query.Where(c => c.City.ToLower() == filter.City.Trim().ToLower());
 
-        if (filter.VerificationStatus.HasValue)
-            query = query.Where(c => c.VerificationStatus == filter.VerificationStatus.Value);
+        if (filter.AccountStatus.HasValue)
+            query = query.Where(c => c.AccountStatus == filter.AccountStatus.Value);
 
         if (filter.HasTpoAssigned.HasValue)
         {

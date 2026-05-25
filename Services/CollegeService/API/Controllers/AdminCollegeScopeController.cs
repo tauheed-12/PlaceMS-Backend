@@ -1,6 +1,6 @@
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.DTOs.Responses;
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Wrappers;
@@ -18,7 +18,7 @@ public class AdminCollegeScopeController : ControllerBase
     {
         _adminCollegeScopeService = adminCollegeScopeService;
     }
-    
+
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<AdminCollegeScopeResponseDto>), 201)]
@@ -41,12 +41,21 @@ public class AdminCollegeScopeController : ControllerBase
     }
 
 
-    [HttpGet("{adminId}")]
-    [ProducesResponseType(typeof(ApiResponse<List<Guid>>), 200)]
+    [HttpGet("{adminId}/tpos")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    public async Task<IActionResult> GetTposByAdminId(Guid adminId, CancellationToken ct)
+    {
+        var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, 1, 10, ct);
+        return Ok(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>.Ok(tpoDetails));
+    }
+
+    [HttpGet("{adminId}/colleges")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     public async Task<IActionResult> GetCollegesByAdminId(Guid adminId, CancellationToken ct)
     {
-        var collegeIds = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, ct);
-        return Ok(ApiResponse<List<Guid>>.Ok(collegeIds));
+        var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, 1, 10, ct);
+        return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(collegeDetails));
     }
 }

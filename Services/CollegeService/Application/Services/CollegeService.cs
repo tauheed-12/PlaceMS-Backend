@@ -1,9 +1,10 @@
 using SharedKernel.Exceptions;
 
-using CollegeService.Application.Interfaces;
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.DTOs.Responses;
 using CollegeService.Domain.Entities;
+using CollegeService.Application.Interfaces.Services;
+using CollegeService.Application.Interfaces.Repositories;
 
 namespace CollegeService.Application.Services;
 
@@ -91,7 +92,7 @@ public class CollegeService : ICollegeService
                 Code = existingCollege.Code,
                 City = existingCollege.City,
                 State = existingCollege.State,
-                VerificationStatus = existingCollege.VerificationStatus
+                AccountStatus = existingCollege.AccountStatus,
             }
         };
     }
@@ -127,7 +128,7 @@ public class CollegeService : ICollegeService
                 Code = college.Code,
                 City = college.City,
                 State = college.State,
-                VerificationStatus = college.VerificationStatus,
+                AccountStatus = college.AccountStatus,
                 HasTpoAssigned = false,
             }
         };

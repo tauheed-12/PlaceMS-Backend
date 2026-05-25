@@ -1,4 +1,4 @@
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Repositories;
 using CollegeService.Domain.Entities;
 using CollegeService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

@@ -1,5 +1,6 @@
 using CollegeService.Application.DTOs.Responses;
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Services;
+using CollegeService.Application.Interfaces.Repositories;
 using CollegeService.Domain.Entities;
 using SharedKernel.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,7 @@ public class CollegeQueryService : ICollegeQueryService
             Code = college.Code,
             City = college.City,
             State = college.State,
-            VerificationStatus = college.VerificationStatus,
+            AccountStatus = college.AccountStatus,
             HasTpoAssigned = tpoCollegeIds.Contains(college.Id)
         }).ToList();
 
@@ -92,51 +93,6 @@ public class CollegeQueryService : ICollegeQueryService
         return [.. colleges.Select(c => MapToShortDto(c))];
     }
 
-    public async Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(Guid adminId, int pageNumber, int pageSize, CancellationToken ct)
-    {
-        if (pageNumber <= 0) pageNumber = 1;
-
-        if (pageSize <= 0) pageSize = 10;
-
-        var collegeIds = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, ct);
-
-        var query = _collegeRepository.GetQueryable().Where(c => collegeIds.Contains(c.Id));
-        var totalCount = await query.CountAsync(ct);
-
-        // Paginated data
-        var colleges = await query
-            .OrderBy(c => c.Name)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync(ct);
-
-        var pagedCollegeIds = colleges
-        .Select(c => c.Id)
-        .ToList();
-
-        var tpoCollegeIds = await _tpoRepository.GetCollegeIdsHavingPrimaryTpoAsync(pagedCollegeIds, ct);
-
-        var result = colleges.Select(college => new CollegeShortDto
-        {
-            Id = college.Id,
-            Name = college.Name,
-            Code = college.Code,
-            City = college.City,
-            State = college.State,
-            VerificationStatus = college.VerificationStatus,
-            HasTpoAssigned = tpoCollegeIds.Contains(college.Id)
-        }).ToList();
-
-        return new PaginatedResponseDto<CollegeShortDto>
-        {
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            TotalCount = totalCount,
-            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-            Items = result
-        };
-    }
-
     public async Task<PagedResult<CollegeShortDto>> GetFilteredCollegesAsync(CollegeFilterRequestDto filter, CancellationToken ct = default)
     {
         var (items, totalCount) = await _collegeRepository.GetFilteredAsync(filter, ct);
@@ -157,11 +113,11 @@ public class CollegeQueryService : ICollegeQueryService
         return new ValidateCollegeCodeResponseDto
         {
             IsValid = college != null,
-            VerificationStatus = college == null ? VerificationStatus.Unverified : college.VerificationStatus,
+            AccountStatus = college == null ? AccountStatus.Suspended : college.AccountStatus,
             CollegeId = college?.Id ?? Guid.Empty,
             CollegeName = college?.Name ?? string.Empty,
             CollegeCode = college?.Code ?? string.Empty,
-            IsActive = college?.VerificationStatus != VerificationStatus.Deactivated
+            IsActive = college?.AccountStatus != AccountStatus.Deactivated
         };
     }
 
@@ -174,7 +130,7 @@ public class CollegeQueryService : ICollegeQueryService
             Code = college.Code,
             City = college.City,
             State = college.State,
-            VerificationStatus = college.VerificationStatus,
+            AccountStatus = college.AccountStatus,
             HasTpoAssigned = hasTpoAssigned
         };
     }
@@ -194,7 +150,7 @@ public class CollegeQueryService : ICollegeQueryService
             Phone = college.Phone,
             Website = college.Website,
             Pincode = college.Pincode,
-            VerificationStatus = college.VerificationStatus
+            AccountStatus = college.AccountStatus
         };
     }
 }

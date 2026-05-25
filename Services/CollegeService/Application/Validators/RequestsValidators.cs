@@ -140,9 +140,9 @@ public class CollegeFilterRequestValidator : AbstractValidator<CollegeFilterRequ
             .Must(size => AllowedPageSizes.Contains(size))
             .WithMessage($"Page size must be one of: {string.Join(", ", AllowedPageSizes)}.");
 
-        RuleFor(x => x.VerificationStatus)
-            .IsInEnum().WithMessage("Invalid verification status.")
-            .When(x => x.VerificationStatus.HasValue);
+        RuleFor(x => x.AccountStatus)
+            .IsInEnum().WithMessage("Invalid account status.")
+            .When(x => x.AccountStatus.HasValue);
     }
 }
 

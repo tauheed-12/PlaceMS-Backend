@@ -1,6 +1,8 @@
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.DTOs.Responses;
 
+namespace CollegeService.Application.Interfaces.Services;
+
 public interface ICollegeService
 {
     Task<CreateCollegeResponseDto> RegisterAsync(CreateCollegeRequestDto request, string registeredBy, CancellationToken ct);

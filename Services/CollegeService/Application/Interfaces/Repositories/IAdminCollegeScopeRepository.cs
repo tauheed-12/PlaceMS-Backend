@@ -1,5 +1,7 @@
 using CollegeService.Domain.Entities;
 
+namespace CollegeService.Application.Interfaces.Repositories;
+
 public interface IAdminCollegeScopeRepository
 {
     Task<List<Guid>> GetCollegeIdsByAdminIdAsync(Guid adminId, CancellationToken ct = default);

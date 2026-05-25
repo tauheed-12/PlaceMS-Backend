@@ -1,5 +1,8 @@
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.DTOs.Responses;
+using CollegeService.Application.Interfaces.Services;
+using CollegeService.Application.Interfaces.Repositories;
+using CollegeService.Application.Interfaces.Clients;
 using CollegeService.Application.Interfaces;
 using CollegeService.Domain.Entities;
 using SharedKernel.Enums;
@@ -26,22 +29,22 @@ public class CollegeTpoService : ICollegeTpoService
         _collegeRepository = collegeRepository;
         _identityClient = identityClient;
         _eventPublisher = eventPublisher;
+
         _logger = logger;
     }
 
     public async Task<TpoDetailsDto> AssignPrimaryTpoAsync(
-        Guid collegeId,
         CreateTpoRequestDto request,
         Guid assignedBy,
         CancellationToken ct)
     {
-        var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
-            ?? throw new NotFoundException("College", collegeId);
+        var college = await _collegeRepository.GetByIdAsync(request.CollegeId, ct)
+            ?? throw new NotFoundException("College", request.CollegeId);
 
-        if (college.VerificationStatus == VerificationStatus.Deactivated)
+        if (college.AccountStatus == AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("Cannot assign a TPO to a deactivated college. Reactivate the college first.");
 
-        var existingTpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(collegeId, ct);
+        var existingTpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(request.CollegeId, ct);
         if (existingTpo is not null)
             throw new BusinessRuleException($"College '{college.Name}' already has a primary TPO assigned" + "Remove the existing TPO before assigning a new one.");
 
@@ -55,7 +58,7 @@ public class CollegeTpoService : ICollegeTpoService
                 FullName = request.FullName,
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
-                CollegeId = collegeId,
+                CollegeId = request.CollegeId,
                 CollegeCode = college.Code
             }, ct);
 
@@ -63,7 +66,7 @@ public class CollegeTpoService : ICollegeTpoService
             throw new ServiceUnavailableException("IdentityService", "Failed to create TPO user account. Please try again.");
 
         var collegeTpo = CollegeTpo.Create(
-            collegeId: collegeId,
+            collegeId: request.CollegeId,
             tpoId: identityResult.UserId,
             email: request.Email,
             assignedBy: assignedBy);
@@ -75,14 +78,14 @@ public class CollegeTpoService : ICollegeTpoService
         // var events = college.DomainEvents.ToList();
         // await _eventPublisher.PublishAsync(events, ct);
         // college.ClearDomainEvents();
-        var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(collegeId, ct)
+        var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(request.CollegeId, ct)
             ?? throw new NotFoundException("TPO", college.Name);
 
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
             ?? throw new NotFoundException("");
 
         _logger.LogInformation("TPO {TpoUserId} ({TpoEmail}) assigned to college {CollegeId} by admin {AssignedBy}",
-            identityResult.UserId, request.Email, collegeId, assignedBy);
+            identityResult.UserId, request.Email, request.CollegeId, assignedBy);
 
         return MapToDetailsDto(tpoDetails, college, tpo.IsPrimary);
     }
@@ -144,7 +147,8 @@ public class CollegeTpoService : ICollegeTpoService
             Email = tpo.Email,
             PhoneNumber = tpo.PhoneNumber,
             IsPrimary = isPrimary,
-            VerificationStatus = tpo.VerificationStatus.ToString(),
+            VerificationStatus = tpo.VerificationStatus,
+            AccountStatus = tpo.AccountStatus,
             CreatedAt = tpo.CreatedAt
         };
 }

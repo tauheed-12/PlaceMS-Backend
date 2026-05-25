@@ -1,6 +1,8 @@
 using CollegeService.Domain.Entities;
 using CollegeService.Application.DTOs.Requests;
 
+namespace CollegeService.Application.Interfaces.Repositories;
+
 public interface ICollegeRepository
 {
     Task<College?> GetByIdAsync(Guid id, CancellationToken ct = default);

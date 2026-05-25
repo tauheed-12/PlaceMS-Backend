@@ -1,4 +1,4 @@
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Services;
 using CollegeService.Application.DTOs.Responses;
 using CollegeService.Application.DTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -83,15 +83,15 @@ public class CollegeController : ControllerBase
 
 
     // Get college details under a admin
-    [HttpGet("admin/{id}")]
-    [Authorize(Roles = Roles.SuperAdminOrAdmin)]
-    [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
-    [ProducesResponseType(typeof(ApiResponse), 404)]
-    public async Task<IActionResult> GetCollegesByAdminId(CancellationToken ct, [FromRoute] Guid id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
-    {
-        var result = await _collegeQueryService.GetCollegesByAdminIdAsync(id, pageNumber, pageSize, ct);
-        return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(result));
-    }
+    // [HttpGet("admin/{id}")]
+    // [Authorize(Roles = Roles.SuperAdminOrAdmin)]
+    // [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
+    // [ProducesResponseType(typeof(ApiResponse), 404)]
+    // public async Task<IActionResult> GetCollegesByAdminId(CancellationToken ct, [FromRoute] Guid id, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    // {
+    //     var result = await _collegeQueryService.GetCollegesByAdminIdAsync(id, pageNumber, pageSize, ct);
+    //     return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(result));
+    // }
 
 
     // Get all colleges  
@@ -116,7 +116,7 @@ public class CollegeController : ControllerBase
         return Ok(ApiResponse<CollegeDetailsDto>.Ok(result));
     }
 
-
+    // Search colleges with filters
     [HttpGet("search")]
     [ProducesResponseType(typeof(PagedResult<CollegeShortDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -125,4 +125,14 @@ public class CollegeController : ControllerBase
         var result = await _collegeQueryService.GetFilteredCollegesAsync(filter, ct);
         return Ok(result);
     }
-};
+
+    // Validate college by code
+    [HttpGet("validate")]
+    [ProducesResponseType(typeof(ApiResponse<ValidateCollegeCodeResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ValidateCollege([FromQuery] string code, CancellationToken ct)
+    {
+        var result = await _collegeQueryService.ValidateCollegeAsync(code, ct);
+        return Ok(ApiResponse<ValidateCollegeCodeResponseDto>.Ok(result));
+    }
+}

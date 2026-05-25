@@ -1,6 +1,5 @@
-using System.Net.Http.Json;
 using CollegeService.Application.DTOs.Requests;
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Clients;
 using SharedKernel.Exceptions;
 
 namespace CollegeService.Infrastructure.Services;
@@ -84,9 +83,9 @@ public class IdentityServiceClient : IIdentityServiceClient
         }
     }
 
-    public async Task<List<TpoDetails>?> GetTpoDetailsByIdsBatchAsync(List<Guid> tpoIds, CancellationToken ct)
+    public async Task<List<TpoDetails>?> GetTpoDetailsByIdsBatchAsync(IEnumerable<Guid> tpoIds, CancellationToken ct)
     {
-        if (tpoIds == null || tpoIds.Count == 0)
+        if (tpoIds == null || !tpoIds.Any())
             return new List<TpoDetails>();
 
         var tasks = tpoIds.Select(id => GetTpoDetails(id, ct));

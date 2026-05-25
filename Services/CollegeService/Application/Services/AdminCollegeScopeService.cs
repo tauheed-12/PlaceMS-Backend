@@ -1,7 +1,10 @@
 using CollegeService.Application.DTOs.Responses;
-using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Services;
+using CollegeService.Application.Interfaces.Repositories;
 using CollegeService.Domain.Entities;
+using CollegeService.Application.Interfaces.Clients;
 using SharedKernel.Exceptions;
+using Microsoft.EntityFrameworkCore;
 
 namespace CollegeService.Application.Services;
 
@@ -49,44 +52,120 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         await _repository.SaveChangesAsync(ct);
     }
 
-    public async Task<List<Guid>> GetCollegesByAdminIdAsync(Guid adminUserId, CancellationToken ct)
-        => await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
-
-    public async Task<List<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminUserId, CancellationToken ct)
+    public async Task<List<Guid>> GetCollegesIdsByAdminIdAsync(Guid adminUserId, CancellationToken ct)
     {
-        var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
-        var tpoDetailsList = new List<TpoDetailsDto>();
-        var tpoIds = new HashSet<Guid>();
+        return await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);
+    }
 
-        foreach (var collegeId in collegeIds)
+    public async Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(Guid adminId, int pageNumber, int pageSize, CancellationToken ct)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+
+        if (pageSize <= 0) pageSize = 10;
+
+        var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminId, ct);
+
+        var query = _collegeRepository.GetQueryable().Where(c => collegeIds.Contains(c.Id));
+        var totalCount = await query.CountAsync(ct);
+
+        // Paginated data
+        var colleges = await query
+            .OrderBy(c => c.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        var pagedCollegeIds = colleges
+        .Select(c => c.Id)
+        .ToList();
+
+        var tpoCollegeIds = await _tpoRepository.GetCollegeIdsHavingPrimaryTpoAsync(pagedCollegeIds, ct);
+
+        var result = colleges.Select(college => new CollegeShortDto
         {
-            var college = await _collegeRepository.GetByIdAsync(collegeId, ct);
-            if (college == null) continue;
+            Id = college.Id,
+            Name = college.Name,
+            Code = college.Code,
+            City = college.City,
+            State = college.State,
+            AccountStatus = college.AccountStatus,
+            HasTpoAssigned = tpoCollegeIds.Contains(college.Id)
+        }).ToList();
 
-            var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(collegeId, ct);
-            if (tpo == null) continue;
+        return new PaginatedResponseDto<CollegeShortDto>
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+            Items = result
+        };
+    }
 
-            tpoIds.Add(tpo.TpoId);
-        }
+    public async Task<PaginatedResponseDto<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminId, int pageNumber, int pageSize, CancellationToken ct)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
 
-        // Fetch details for all TPOs
-        var tpoDetailsBatch = await _identityClient.GetTpoDetailsByIdsBatchAsync(tpoIds.ToList(), ct)
+        if (pageSize <= 0) pageSize = 10;
+
+        var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminId, ct);
+
+        var query = _collegeRepository.GetQueryable().Where(c => collegeIds.Contains(c.Id));
+        var totalCount = await query.CountAsync(ct);
+
+        var colleges = await query
+            .OrderBy(c => c.Name)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        var pagedCollegeIds = colleges
+        .Select(c => c.Id)
+        .ToList();
+
+        var tpos = await _tpoRepository.GetPrimaryTposByCollegeIdsAsync(pagedCollegeIds, ct);
+
+        var userDetails = await _identityClient.GetTpoDetailsByIdsBatchAsync(tpos.Select(t => t.TpoId), ct)
             ?? new List<TpoDetails>();
 
-        return tpoDetailsBatch.Select(tpoDetail => new TpoDetailsDto
+        var userMap = userDetails.ToDictionary(x => x.UserId);
+
+        var result = tpos
+        .Where(t => userMap.ContainsKey(t.TpoId))
+        .Select(t =>
         {
-            UserId = tpoDetail.UserId,
-            FullName = tpoDetail.FullName,
-            Email = tpoDetail.Email,
-            PhoneNumber = tpoDetail.PhoneNumber,
-            CollegeId = tpoDetail.CollegeId,
-            CollegeCode = tpoDetail.CollegeCode,
-            CollegeName = tpoDetail.CollegeName,
-            VerificationStatus = tpoDetail.VerificationStatus.ToString(),
-            IsPrimary = true,
-            IsActive = true,
-            CreatedAt = tpoDetail.CreatedAt
-        }).ToList();
+            var user = userMap[t.TpoId];
+
+            var college = colleges
+                .First(c => c.Id == t.CollegeId);
+
+            return new TpoDetailsDto
+            {
+                UserId = user.UserId,
+                FullName = user.FullName,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+
+                CollegeId = college.Id,
+                CollegeName = college.Name,
+                CollegeCode = college.Code,
+
+                IsPrimary = t.IsPrimary,
+                IsActive = t.IsActive
+            };
+        })
+        .ToList();
+
+        return new PaginatedResponseDto<TpoDetailsDto>
+        {
+            Items = result,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(
+                totalCount / (double)pageSize)
+        };
+
     }
 
     public async Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)

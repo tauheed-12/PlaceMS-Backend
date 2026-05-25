@@ -18,12 +18,7 @@ public class College : AggregateRoot
     public string State { get; private set; } = string.Empty;
     public string Pincode { get; private set; } = string.Empty;
     public string RegisteredBy { get; private set; } = string.Empty;
-    public VerificationStatus VerificationStatus { get; private set; } = VerificationStatus.Unverified;
-
-    // Email Verification
-    public string? EmailVerificationToken { get; private set; }
-    public DateTime? EmailVerificationTokenExpiry { get; private set; }
-    public DateTime? EmailVerifiedAt { get; private set; }
+    public AccountStatus AccountStatus { get; private set; } = AccountStatus.Active;
 
     public College() { }
 
@@ -42,47 +37,11 @@ public class College : AggregateRoot
             State = state.Trim(),
             Pincode = pincode.Trim(),
             RegisteredBy = createdBy,
-            VerificationStatus = VerificationStatus.Unverified
         };
         college.RaiseDomainEvent(new CollegeRegisterDomainEvent(college.Id, college.Email, college.Name, college.Code, college.RegisteredBy));
         college.SetUpdatedAt();
 
         return college;
-    }
-
-    public string GenerateEmailVerificationToken()
-    {
-        var token = GenerateSecureToken();
-        EmailVerificationToken = token;
-        EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
-        SetUpdatedAt();
-        return token;
-    }
-
-    public void VerifyEmail(string token)
-    {
-        if (VerificationStatus == VerificationStatus.Verified)
-            throw new InvalidOperationDomainException("Email is already verified.");
-
-        if (VerificationStatus == VerificationStatus.Deactivated)
-            throw new InvalidOperationDomainException("Account is deactivated.");
-
-        if (EmailVerificationToken is null || EmailVerificationTokenExpiry is null)
-            throw new DomainValidationException("No verification token found. Request a new one.");
-
-        if (EmailVerificationToken != token)
-            throw new DomainValidationException("Invalid verification token.");
-
-        if (DateTime.UtcNow > EmailVerificationTokenExpiry)
-            throw new DomainValidationException("Verification token has expired. Request a new one.");
-
-        VerificationStatus = VerificationStatus.Verified;
-        EmailVerifiedAt = DateTime.UtcNow;
-        EmailVerificationToken = null;
-        EmailVerificationTokenExpiry = null;
-        SetUpdatedAt();
-
-        // RaiseDomainEvent(new UserEmailVerifiedDomainEvent(Id, Email));
     }
 
     public void UpdateDetails(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, string updatedBy)
@@ -104,19 +63,19 @@ public class College : AggregateRoot
     // ------------ Status Management --------------------
     public void Deactivate()
     {
-        if (VerificationStatus == VerificationStatus.Deactivated)
+        if (AccountStatus == AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("College is already deactivated");
 
-        VerificationStatus = VerificationStatus.Deactivated;
+        AccountStatus = AccountStatus.Deactivated;
         SetUpdatedAt();
     }
 
     public void Reactivate()
     {
-        if (VerificationStatus != VerificationStatus.Deactivated)
+        if (AccountStatus != AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("College is not Deactivated");
 
-        VerificationStatus = VerificationStatus.Verified;
+        AccountStatus = AccountStatus.Active;
         SetUpdatedAt();
     }
 
