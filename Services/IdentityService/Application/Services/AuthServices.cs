@@ -51,7 +51,7 @@ public class AuthService : IAuthService
             throw new UnauthorizedException("Please verify your email address before logging in.");
 
         // Deactivated check
-        if (user.VerificationStatus == VerificationStatus.Deactivated)
+        if (user.AccountStatus == AccountStatus.Deactivated)
             throw new UnauthorizedException("Your account has been deactivated. Contact support.");
 
         // Password verification

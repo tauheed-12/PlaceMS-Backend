@@ -14,6 +14,7 @@ public class User : AggregateRoot
     public string? PhoneNumber { get; private set; }
     public UserRole Role { get; private set; }
     public VerificationStatus VerificationStatus { get; private set; } = VerificationStatus.Unverified;
+    public AccountStatus AccountStatus { get; private set; } = AccountStatus.Active;
 
     // ------ College Association (null for admin and super admin) ------
     public Guid? CollegeId { get; private set; }
@@ -55,7 +56,8 @@ public class User : AggregateRoot
             Role = role,
             CollegeId = collegeId,
             CollegeCode = collegeCode?.ToUpperInvariant(),
-            VerificationStatus = VerificationStatus.Unverified
+            VerificationStatus = VerificationStatus.Unverified,
+            AccountStatus = AccountStatus.Active
         };
 
         user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id, user.FullName, user.Email, user.Role.ToString()));
@@ -79,7 +81,7 @@ public class User : AggregateRoot
         if (VerificationStatus == VerificationStatus.Verified)
             throw new InvalidOperationDomainException("Email is already verified.");
 
-        if (VerificationStatus == VerificationStatus.Deactivated)
+        if (AccountStatus == AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("Account is deactivated.");
 
         if (EmailVerificationToken is null || EmailVerificationTokenExpiry is null)
@@ -159,7 +161,7 @@ public class User : AggregateRoot
 
     public bool CanLogin()
     {
-        return !IsDeleted && VerificationStatus == VerificationStatus.Verified && !IsLockedOut();
+        return !IsDeleted && AccountStatus == AccountStatus.Active && !IsLockedOut();
     }
 
     // Adds a new refresh token. Removes expired tokens automatically.
@@ -227,20 +229,20 @@ public class User : AggregateRoot
     // ------------ Status Management --------------------
     public void Deactivate()
     {
-        if (VerificationStatus == VerificationStatus.Deactivated)
+        if (AccountStatus == AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("User is already deactivated");
 
-        VerificationStatus = VerificationStatus.Deactivated;
+        AccountStatus = AccountStatus.Deactivated;
         RevokeAllRefreshTokens("Account Deactivated");
         SetUpdatedAt();
     }
 
     public void Reactivate()
     {
-        if (VerificationStatus != VerificationStatus.Deactivated)
+        if (AccountStatus != AccountStatus.Deactivated)
             throw new InvalidOperationDomainException("User is not Deactivated");
 
-        VerificationStatus = VerificationStatus.Verified;
+        AccountStatus = AccountStatus.Active;
         SetUpdatedAt();
     }
 

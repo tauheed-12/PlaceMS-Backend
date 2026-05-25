@@ -18,6 +18,7 @@ public class AdminCollegeScopeController : ControllerBase
     {
         _adminCollegeScopeService = adminCollegeScopeService;
     }
+    
 
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<AdminCollegeScopeResponseDto>), 201)]
@@ -29,6 +30,7 @@ public class AdminCollegeScopeController : ControllerBase
         return CreatedAtAction(nameof(CreateCollegeScope), ApiResponse<AdminCollegeScopeResponseDto>.Created(response), null);
     }
 
+
     [HttpDelete]
     [ProducesResponseType(typeof(ApiResponse), 204)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
@@ -37,6 +39,7 @@ public class AdminCollegeScopeController : ControllerBase
         await _adminCollegeScopeService.RemoveCollegeFromAdminAsync(collegeScope.AdminId, collegeScope.CollegeId, ct);
         return Ok(ApiResponse.Ok("College scope removed successfully."));
     }
+
 
     [HttpGet("{adminId}")]
     [ProducesResponseType(typeof(ApiResponse<List<Guid>>), 200)]

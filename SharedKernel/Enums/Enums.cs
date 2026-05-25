@@ -50,6 +50,12 @@ namespace SharedKernel.Enums
     {
         Unverified = 1,
         Verified = 2,
+    }
+
+    public enum AccountStatus
+    {
+        Active = 1,
+        Suspended = 2,
         Deactivated = 3
     }
 
