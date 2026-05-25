@@ -6,6 +6,7 @@ namespace CollegeService.Application.Interfaces.Repositories;
 public interface ICollegeTpoRepository
 {
     Task<CollegeTpo?> GetPrimaryTpoByCollegeIdAsync(Guid collegeId, CancellationToken ct = default);
+    Task<CollegeTpo?> GetByTpoIdAsync(Guid tpoId, CancellationToken ct = default);
     Task<CollegeTpo?> GetTpoByEmailAsync(string email, CancellationToken ct = default);
     Task<(IEnumerable<CollegeTpo> Items, int TotalCount)> GetTposAsync(TpoFilterRequestDto filter, CancellationToken ct = default);
     Task<List<CollegeTpo>> GetTposByCollegeIdAsync(Guid collegeId, CancellationToken ct = default);

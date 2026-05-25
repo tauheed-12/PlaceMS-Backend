@@ -15,6 +15,36 @@ public class IdentityServiceClient : IIdentityServiceClient
         _logger = logger;
     }
 
+    private async Task<HttpResponseMessage> SendWithRetriesAsync(Func<Task<HttpResponseMessage>> action, CancellationToken ct)
+    {
+        const int maxAttempts = 3;
+        var delay = 200; // ms
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                var resp = await action();
+                if ((int)resp.StatusCode >= 500 && attempt < maxAttempts)
+                {
+                    await Task.Delay(delay, ct);
+                    delay *= 2;
+                    continue;
+                }
+
+                return resp;
+            }
+            catch (HttpRequestException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(delay, ct);
+                delay *= 2;
+            }
+        }
+
+        // last attempt
+        return await action();
+    }
+
     public async Task<TpoRegistrationResult?> RegisterTpoAsync(RegisterTpoIdentityRequestDto requestDto, CancellationToken ct)
     {
         try
@@ -24,13 +54,13 @@ public class IdentityServiceClient : IIdentityServiceClient
                 FullName = requestDto.FullName,
                 Email = requestDto.Email,
                 PhoneNumber = requestDto.PhoneNumber,
-                Password = Guid.NewGuid().ToString("N"),
+                Password = Guid.NewGuid().ToString("N"), // consider letting identity service handle invites/passwords
                 Role = requestDto.Role,
                 CollegeId = requestDto.CollegeId,
                 CollegeCode = requestDto.CollegeCode
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/api/v1/users", request, ct);
+            var response = await SendWithRetriesAsync(() => _httpClient.PostAsJsonAsync("/api/v1/users", request, ct), ct);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -63,7 +93,7 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/api/v1/users/{tpoId}", ct);
+            var response = await SendWithRetriesAsync(() => _httpClient.GetAsync($"/api/v1/users/{tpoId}", ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;
@@ -88,13 +118,36 @@ public class IdentityServiceClient : IIdentityServiceClient
         if (tpoIds == null || !tpoIds.Any())
             return new List<TpoDetails>();
 
-        var tasks = tpoIds.Select(id => GetTpoDetails(id, ct));
+        // Limit concurrency to avoid overloading the identity service
+        const int maxParallel = 20;
+        using var semaphore = new SemaphoreSlim(maxParallel);
+
+        var tasks = tpoIds.Select(async id =>
+        {
+            await semaphore.WaitAsync(ct);
+            try
+            {
+                return await GetTpoDetails(id, ct);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
         var results = await Task.WhenAll(tasks);
         return results.Where(t => t is not null).Cast<TpoDetails>().ToList();
     }
 
     private static TpoDetails MapUserToTpoDetails(UserData user)
-        => new()
+    {
+        var verificationStatus = SharedKernel.Enums.VerificationStatus.Unverified;
+        if (!Enum.TryParse<SharedKernel.Enums.VerificationStatus>(user.VerificationStatus, true, out verificationStatus))
+        {
+            verificationStatus = SharedKernel.Enums.VerificationStatus.Unverified;
+        }
+
+        return new TpoDetails
         {
             UserId = user.Id,
             FullName = user.FullName,
@@ -103,9 +156,54 @@ public class IdentityServiceClient : IIdentityServiceClient
             CollegeId = user.CollegeId ?? Guid.Empty,
             CollegeCode = user.CollegeCode ?? string.Empty,
             CollegeName = string.Empty,
-            VerificationStatus = Enum.Parse<SharedKernel.Enums.VerificationStatus>(user.VerificationStatus),
+            VerificationStatus = verificationStatus,
             CreatedAt = user.CreatedAt
         };
+    }
+
+    public async Task<TpoDetails?> ActivateTpoAccount(Guid tpoId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/activate", null, ct), ct);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<UserApiResponse>(cancellationToken: ct);
+            if (result?.Data is null) return null;
+
+            return MapUserToTpoDetails(result.Data);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Failed to activate TPO account {UserId}", tpoId);
+            throw new ServiceUnavailableException("IdentityService", "Unable to activate TPO account at this time.");
+        }
+    }
+
+    public async Task<TpoDetails?> DeactivateTpoAccount(Guid tpoId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/deactivate", null, ct), ct);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<UserApiResponse>(cancellationToken: ct);
+            if (result?.Data is null) return null;
+
+            return MapUserToTpoDetails(result.Data);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Failed to deactivate TPO account {UserId}", tpoId);
+            throw new ServiceUnavailableException("IdentityService", "Unable to deactivate TPO account at this time.");
+        }
+    }
 
     private record RegisterUserRequest
     {

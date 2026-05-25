@@ -75,10 +75,27 @@ public class CollegeTpoService : ICollegeTpoService
 
         await _tpoRepository.AddAsync(collegeTpo, ct);
 
-        await _tpoRepository.SaveChangesAsync(ct);
+        try
+        {
+            await _tpoRepository.SaveChangesAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist TPO mapping for user {TpoUserId} — attempting compensation", identityResult.UserId);
+            // Try to deactivate the identity account to avoid leaving an active orphaned user
+            try
+            {
+                await _identityClient.DeactivateTpoAccount(identityResult.UserId, ct);
+            }
+            catch (Exception inner)
+            {
+                _logger.LogError(inner, "Compensation failed when deactivating identity user {UserId}", identityResult.UserId);
+            }
 
-        var tpo = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(request.CollegeId, ct)
-            ?? throw new NotFoundException("TPO", college.Name);
+            throw;
+        }
+
+        var tpo = collegeTpo; // we already have the entity we just saved
 
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
             ?? throw new NotFoundException("TPO not found");
@@ -95,7 +112,8 @@ public class CollegeTpoService : ICollegeTpoService
 
     public async Task RemoveTpoAsync(Guid collegeId, Guid userId, CancellationToken ct)
     {
-        Guid deactivatedBy = Guid.NewGuid(); // TODO: update this from jwt token
+        // NOTE: caller identity should be passed in or resolved from context. TODO: wire ICurrentUserService.
+        Guid deactivatedBy = Guid.NewGuid(); // fallback to a generated id until caller identity is available
         var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
             ?? throw new NotFoundException("College", collegeId);
 
@@ -127,9 +145,7 @@ public class CollegeTpoService : ICollegeTpoService
             ?? throw new NotFoundException("TPO", college.Name);
 
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
-            ?? throw new NotFoundException("");
-
-        if (tpo is null) return null;
+            ?? throw new NotFoundException("TPO");
 
         return MapToDetailsDto(tpoDetails, college, tpo.IsPrimary);
     }
@@ -220,7 +236,9 @@ public class CollegeTpoService : ICollegeTpoService
         var details = await _identityClient.ActivateTpoAccount(tpoId, ct)
             ?? throw new NotFoundException("TPO not found");
 
-        var collegeTpoDetails = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(tpoId, ct);
+        // find mapping by TPO id
+        var collegeTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
+            ?? throw new NotFoundException("TPO mapping not found");
 
         return new TpoDetailsDto
         {
@@ -233,7 +251,7 @@ public class CollegeTpoService : ICollegeTpoService
             AccountStatus = details.AccountStatus,
             CollegeCode = details.CollegeCode,
             CollegeName = details.CollegeName,
-            // IsPrimary = collegeTpoDetails?.IsPrimary,
+            IsPrimary = collegeTpo.IsPrimary
         };
     }
 
@@ -242,7 +260,8 @@ public class CollegeTpoService : ICollegeTpoService
         var details = await _identityClient.DeactivateTpoAccount(tpoId, ct)
             ?? throw new NotFoundException("TPO not found");
 
-        var collegeTpoDetails = await _tpoRepository.GetPrimaryTpoByCollegeIdAsync(tpoId, ct);
+        var collegeTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
+            ?? throw new NotFoundException("TPO mapping not found");
 
         return new TpoDetailsDto
         {
@@ -255,7 +274,7 @@ public class CollegeTpoService : ICollegeTpoService
             AccountStatus = details.AccountStatus,
             CollegeCode = details.CollegeCode,
             CollegeName = details.CollegeName,
-            // IsPrimary = collegeTpoDetails?.IsPrimary,
+            IsPrimary = collegeTpo.IsPrimary
         };
     }
 
