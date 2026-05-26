@@ -24,8 +24,8 @@ public class CollegeTpoRepository : ICollegeTpoRepository
     public Task<int> SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 
-    public async Task<IQueryable<CollegeTpo>> GetQueryable()
-        => await Task.FromResult(_context.CollegeTpos.AsNoTracking());
+    public IQueryable<CollegeTpo> GetQueryable()
+        => _context.CollegeTpos.AsQueryable();
 
     public async Task<CollegeTpo?> GetPrimaryTpoByCollegeIdAsync(Guid collegeId, CancellationToken ct = default)
         => await _context.CollegeTpos.FirstOrDefaultAsync(
@@ -33,6 +33,13 @@ public class CollegeTpoRepository : ICollegeTpoRepository
                  t.IsPrimary &&
                  t.IsActive,
             ct);
+
+    public async Task<CollegeTpo?> GetByTpoIdAsync(Guid tpoId, CancellationToken ct = default)
+    {
+        return await _context.CollegeTpos.FirstOrDefaultAsync(
+            t => t.TpoId == tpoId &&
+                 t.IsActive);
+    }
 
     public async Task<List<CollegeTpo>> GetTposByCollegeIdAsync(Guid collegeId, CancellationToken ct = default)
         => await _context.CollegeTpos

@@ -1,4 +1,3 @@
-
 using CollegeService.Application.Interfaces;
 using CollegeService.Domain.Events;
 using SharedKernel.Abstractions;
@@ -39,7 +38,7 @@ public class DomainEventPublisher : IDomainEventPublisher
     {
         switch (@event)
         {
-            case CollegeRegisterDomainEvent e:
+            case CollegeCreatedDomainEvent e:
                 await _kafkaPublisher.PublishAsync(
                     KafkaTopics.CollegeRegistered,
                     new MessageEnvelope<CollegeRegisteredEvent>
@@ -49,10 +48,66 @@ public class DomainEventPublisher : IDomainEventPublisher
                         EventType = e.EventType,
                         Payload = new CollegeRegisteredEvent
                         {
-                            CollegeId = e.Id,
-                            CollegeEmail = e.Email,
-                            CollegeCode = e.Code,
-                            RegisteredByAdminId = e.RegisteredBy
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            CollegeCode = e.CollegeCode,
+                            RegisteredByAdminId = e.CreatedByName
+                        }
+                    }, ct);
+                break;
+
+            case CollegeActivatedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.CollegeActivated,
+                    new MessageEnvelope<CollegeActivatedEvent>
+                    {
+                        Source = "CollegeService",
+                        Topic = KafkaTopics.CollegeActivated,
+                        EventType = e.EventType,
+                        Payload = new CollegeActivatedEvent
+                        {
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            CollegeCode = e.CollegeCode,
+                            ByAdminId = e.ActivatedBy
+                        }
+                    }, ct);
+                break;
+
+            case CollegeDeactivatedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.CollegeDeactivated,
+                    new MessageEnvelope<CollegeDeactivatedEvent>
+                    {
+                        Source = "CollegeService",
+                        Topic = KafkaTopics.CollegeDeactivated,
+                        EventType = e.EventType,
+                        Payload = new CollegeDeactivatedEvent
+                        {
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            CollegeCode = e.CollegeCode,
+                            ByAdminId = e.DeactivatedBy
+                        }
+                    }, ct);
+                break;
+
+            case TpoAssignedToCollegeDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.TpoAssigned,
+                    new MessageEnvelope<TpoAssignedEvent>
+                    {
+                        Source = "CollegeService",
+                        Topic = KafkaTopics.TpoAssigned,
+                        EventType = e.EventType,
+                        Payload = new TpoAssignedEvent
+                        {
+                            TpoUserId = e.TpoId,
+                            TpoEmail = e.TpoEmail,
+                            TpoName = e.TpoName,
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            CollegeCode = e.CollegeCode
                         }
                     }, ct);
                 break;

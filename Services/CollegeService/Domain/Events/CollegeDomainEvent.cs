@@ -36,8 +36,11 @@ public record CollegeDeactivatedDomainEvent(
 
 public record TpoAssignedToCollegeDomainEvent(
     Guid TpoId,
+    string TpoEmail,
+    string TpoName,
     Guid CollegeId,
     string CollegeName,
+    string CollegeCode,
     Guid AssignedBy)
     : BaseDomainEvent
 {

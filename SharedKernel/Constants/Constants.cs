@@ -43,6 +43,7 @@ public static class KafkaTopics
     // College events
     public const string CollegeRegistered = "pms.college.registered";
     public const string CollegeDeactivated = "pms.college.deactivated";
+    public const string CollegeActivated = "pms.college.activated";
     public const string TpoAssigned = "pms.tpo.assigned";
     public const string CoordinatorAdded = "pms.coordinator.added";
 

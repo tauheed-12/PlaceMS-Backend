@@ -74,7 +74,25 @@ public record CollegeRegisteredEvent
     public string CollegeEmail { get; init; } = string.Empty;
     public string CollegeName { get; init; } = string.Empty;
     public string CollegeCode { get; init; } = string.Empty;
-    public string RegisteredByAdminId { get; init; } = string.Empty;
+    public Guid RegisteredByAdminId { get; init; }
+}
+
+public record CollegeActivatedEvent
+{
+    public Guid CollegeId { get; init; }
+    public string CollegeEmail { get; init; } = string.Empty;
+    public string CollegeName { get; init; } = string.Empty;
+    public string CollegeCode { get; init; } = string.Empty;
+    public Guid ByAdminId { get; init; }
+}
+
+public record CollegeDeactivatedEvent
+{
+    public Guid CollegeId { get; init; }
+    public string CollegeEmail { get; init; } = string.Empty;
+    public string CollegeName { get; init; } = string.Empty;
+    public string CollegeCode { get; init; } = string.Empty;
+    public Guid ByAdminId { get; init; }
 }
 
 /// <summary>pms.tpo.assigned — fired by CollegeService when TPO is assigned.</summary>
@@ -86,7 +104,6 @@ public record TpoAssignedEvent
     public Guid CollegeId { get; init; }
     public string CollegeName { get; init; } = string.Empty;
     public string CollegeCode { get; init; } = string.Empty;
-    public string VerificationToken { get; init; } = string.Empty;
 }
 
 /// <summary>pms.coordinator.added — fired by CollegeService.</summary>
