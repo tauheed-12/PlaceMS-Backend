@@ -45,7 +45,7 @@ public class AdminCollegeScopeController : ControllerBase
     [HttpGet("{adminId}/tpos")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetTposByAdminId(Guid adminId, CancellationToken ct, TpoFilterRequestDto filter)
+    public async Task<IActionResult> GetTposByAdminId(Guid adminId, TpoFilterRequestDto filter, CancellationToken ct)
     {
         var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, filter, ct);
         return Ok(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>.Ok(tpoDetails));
@@ -55,7 +55,7 @@ public class AdminCollegeScopeController : ControllerBase
     [HttpGet("{adminId}/colleges")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetCollegesByAdminId(Guid adminId, CancellationToken ct, CollegeFilterRequestDto filter)
+    public async Task<IActionResult> GetCollegesByAdminId(Guid adminId, CollegeFilterRequestDto filter, CancellationToken ct)
     {
         var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, filter, ct);
         return Ok(ApiResponse<PaginatedResponseDto<CollegeShortDto>>.Ok(collegeDetails));
@@ -65,7 +65,7 @@ public class AdminCollegeScopeController : ControllerBase
     [HttpGet("me/tpos")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetTposByAdminId(CancellationToken ct, TpoFilterRequestDto filter)
+    public async Task<IActionResult> GetTposByAdminId(TpoFilterRequestDto filter, CancellationToken ct)
     {
         var adminId = Guid.NewGuid(); // Replace with actual admin ID retrieval logic
         var tpoDetails = await _adminCollegeScopeService.GetTposByAdminIdAsync(adminId, filter, ct);
@@ -76,7 +76,7 @@ public class AdminCollegeScopeController : ControllerBase
     [HttpGet("me/colleges")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
-    public async Task<IActionResult> GetCollegesByAdminId(CancellationToken ct, CollegeFilterRequestDto filter)
+    public async Task<IActionResult> GetCollegesByAdminId(CollegeFilterRequestDto filter, CancellationToken ct)
     {
         var adminId = Guid.NewGuid(); // Replace with actual admin ID retrieval logic
         var collegeDetails = await _adminCollegeScopeService.GetCollegesByAdminIdAsync(adminId, filter, ct);

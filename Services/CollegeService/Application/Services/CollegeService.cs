@@ -57,33 +57,42 @@ public class CollegeService : ICollegeService
 
     public async Task<UpdateCollegeResponseDto> UpdateAsync(UpdateCollegeRequestDto request, Guid updatedBy, CancellationToken ct)
     {
-        var existingCollege = await _collegeRepo.GetByIdAsync(request.Id, ct) ??
-            throw new NotFoundException("College not found");
+        var existingCollege = await _collegeRepo.GetByIdAsync(request.Id, ct)
+            ?? throw new NotFoundException("College not found");
 
-        if (existingCollege.Email != request.Email && await _collegeRepo.EmailExistsAsync(request.Email, ct))
+        if (!string.IsNullOrWhiteSpace(request.Email) &&
+            existingCollege.Email != request.Email &&
+            await _collegeRepo.EmailExistsAsync(request.Email, ct))
+        {
             throw new ConflictException("college", "email", request.Email);
+        }
 
-        if (existingCollege.Code != request.Code && await _collegeRepo.CodeExistsAsync(request.Code, ct))
+        if (!string.IsNullOrWhiteSpace(request.Code) &&
+            existingCollege.Code != request.Code &&
+            await _collegeRepo.CodeExistsAsync(request.Code, ct))
+        {
             throw new ConflictException("college", "code", request.Code);
+        }
 
         existingCollege.UpdateDetails(
-            request.Name,
-            request.Code,
-            request.Email,
-            request.Phone,
-            request.Website,
-            request.AffiliatedBy,
-            request.Type,
-            request.City,
-            request.State,
-            request.Pincode,
-            updatedBy
+            name: request.Name,
+            code: request.Code,
+            email: request.Email,
+            phone: request.Phone,
+            website: request.Website,
+            affiliatedBy: request.AffiliatedBy,
+            type: request.Type,
+            city: request.City,
+            state: request.State,
+            pincode: request.Pincode,
+            updatedBy: updatedBy
         );
 
-        _collegeRepo.Update(existingCollege);
         await _collegeRepo.SaveChangesAsync(ct);
 
-        _logger.LogInformation("College {CollegeId} updated with name {Name}", existingCollege.Id, request.Name);
+        _logger.LogInformation(
+            "College {CollegeId} updated",
+            existingCollege.Id);
 
         return new UpdateCollegeResponseDto
         {
@@ -99,7 +108,6 @@ public class CollegeService : ICollegeService
             }
         };
     }
-
 
     public async Task DeactivateCollegeAsync(Guid collegeId, Guid deactivatedBy, CancellationToken ct)
     {

@@ -19,16 +19,19 @@ public record CreateCollegeRequestDto
 public record UpdateCollegeRequestDto
 {
     public Guid Id { get; init; }
-    public string Name { get; init; } = string.Empty;
-    public string Code { get; init; } = string.Empty;
-    public string Email { get; init; } = string.Empty;
-    public string Phone { get; init; } = string.Empty;
-    public string Website { get; init; } = string.Empty;
-    public string AffiliatedBy { get; init; } = string.Empty;
-    public CollegeType Type { get; init; }
-    public string City { get; init; } = string.Empty;
-    public string State { get; init; } = string.Empty;
-    public string Pincode { get; init; } = string.Empty;
+
+    public string? Name { get; init; }
+    public string? Code { get; init; }
+    public string? Email { get; init; }
+    public string? Phone { get; init; }
+    public string? Website { get; init; }
+    public string? AffiliatedBy { get; init; }
+
+    public CollegeType? Type { get; init; }
+
+    public string? City { get; init; }
+    public string? State { get; init; }
+    public string? Pincode { get; init; }
 }
 
 public class CollegeFilterRequestDto

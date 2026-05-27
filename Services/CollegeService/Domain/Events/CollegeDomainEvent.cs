@@ -48,32 +48,29 @@ public record TpoAssignedToCollegeDomainEvent(
 }
 
 // TPO Domain Events
-public record TpoRemovedFromCollegeDomainEvent(
-    Guid TpoId,
-    Guid CollegeId,
-    string CollegeName,
-    Guid RemovedBy)
-    : BaseDomainEvent
+public record TpoRemovedFromCollegeDomainEvent(Guid TpoId, Guid CollegeId, string CollegeName, Guid RemovedBy) : BaseDomainEvent
 {
     public override string EventType => "college.tpo.removed";
 }
 
-public record TpoActivatedDomainEvent(
-    Guid TpoId,
-    Guid CollegeId,
-    Guid ActivatedBy)
-    : BaseDomainEvent
+public record TpoActivatedDomainEvent(Guid TpoId, Guid CollegeId, Guid ActivatedBy) : BaseDomainEvent
 {
     public override string EventType => "tpo.activated";
 }
 
-public record TpoDeactivatedDomainEvent(
-    Guid TpoId,
-    Guid CollegeId,
-    Guid DeactivatedBy)
-    : BaseDomainEvent
+public record TpoDeactivatedDomainEvent(Guid TpoId, Guid CollegeId, Guid DeactivatedBy) : BaseDomainEvent
 {
     public override string EventType => "tpo.deactivated";
+}
+
+public record TpoPrimaryScopeRemovedDomainEvent(Guid Id, Guid CollegeId, Guid updatedBy) : BaseDomainEvent
+{
+    public override string EventType => "tpo.primaryscope.removed";
+}
+
+public record TpoPrimaryScopeAddedDomainEvent(Guid Id, Guid CollegeId, Guid updatedBy) : BaseDomainEvent
+{
+    public override string EventType => "tpo.primaryscope.added";
 }
 
 

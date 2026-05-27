@@ -33,8 +33,8 @@ public class CollegeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), 409)]
     public async Task<IActionResult> RegisterCollege([FromBody] CreateCollegeRequestDto request, CancellationToken ct)
     {
-        string registeredBy = "Unknown";
-        var result = await _collegeService.RegisterAsync(request, registeredBy, ct);
+        Guid userId = Guid.NewGuid();
+        var result = await _collegeService.RegisterAsync(request, userId, ct);
 
         return CreatedAtAction(
             nameof(RegisterCollege),
@@ -51,8 +51,8 @@ public class CollegeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), 404)]
     public async Task<IActionResult> UpdateCollege([FromBody] UpdateCollegeRequestDto request, CancellationToken ct)
     {
-        string updatedBy = "Unknown";
-        var result = await _collegeService.UpdateAsync(request, updatedBy, ct);
+        Guid userId = Guid.NewGuid();
+        var result = await _collegeService.UpdateAsync(request, userId, ct);
 
         return Ok(ApiResponse<UpdateCollegeResponseDto>.Ok(result));
     }
@@ -65,7 +65,8 @@ public class CollegeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), 404)]
     public async Task<IActionResult> DeactivateCollege([FromQuery] Guid collegeId, CancellationToken ct)
     {
-        await _collegeService.DeactivateCollegeAsync(collegeId, ct);
+        Guid userId = Guid.NewGuid();
+        await _collegeService.DeactivateCollegeAsync(collegeId, userId, ct);
         return NoContent();
     }
 
@@ -77,7 +78,8 @@ public class CollegeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse), 404)]
     public async Task<IActionResult> ActivateCollege([FromQuery] Guid collegeId, CancellationToken ct)
     {
-        await _collegeService.ReactivateCollegeAsync(collegeId, ct);
+        Guid userId = Guid.NewGuid();
+        await _collegeService.ReactivateCollegeAsync(collegeId, userId, ct);
         return Ok(ApiResponse.Ok("College reactivated successfully"));
     }
 

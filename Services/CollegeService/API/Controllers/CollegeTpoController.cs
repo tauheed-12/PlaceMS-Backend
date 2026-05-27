@@ -63,7 +63,7 @@ public class CollegeTpoController : ControllerBase
 
     // Get all TPOs with filtering and pagination
     [HttpGet("list")]
-    [Authorize(Roles = Roles.SuperAdminOrAdmin)]
+    [Authorize(Roles = Roles.SuperAdmin)]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<TpoDetailsDto>>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     public async Task<IActionResult> GetTpos([FromQuery] TpoFilterRequestDto filter, CancellationToken ct)

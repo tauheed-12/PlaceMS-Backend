@@ -45,19 +45,40 @@ public class College : AggregateRoot
         return college;
     }
 
-    public void UpdateDetails(string name, string code, string email, string phone, string website, string affiliatedBy, CollegeType type, string city, string state, string pincode, Guid updatedBy)
+    public void UpdateDetails(string? name, string? code, string? email, string? phone, string? website, string? affiliatedBy, CollegeType? type, string? city, string? state, string? pincode, Guid updatedBy)
     {
-        Name = name.Trim();
-        Code = code.Trim().ToUpperInvariant();
-        Email = email.Trim().ToLowerInvariant();
-        Phone = phone.Trim();
-        Website = website.Trim().ToLowerInvariant();
-        AffiliatedBy = affiliatedBy.Trim();
-        Type = type;
-        City = city.Trim();
-        State = state.Trim();
-        Pincode = pincode.Trim();
+        if (!string.IsNullOrWhiteSpace(name))
+            Name = name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(code))
+            Code = code.Trim().ToUpperInvariant();
+
+        if (!string.IsNullOrWhiteSpace(email))
+            Email = email.Trim().ToLowerInvariant();
+
+        if (!string.IsNullOrWhiteSpace(phone))
+            Phone = phone.Trim();
+
+        if (!string.IsNullOrWhiteSpace(website))
+            Website = website.Trim().ToLowerInvariant();
+
+        if (!string.IsNullOrWhiteSpace(affiliatedBy))
+            AffiliatedBy = affiliatedBy.Trim();
+
+        if (type.HasValue)
+            Type = type.Value;
+
+        if (!string.IsNullOrWhiteSpace(city))
+            City = city.Trim();
+
+        if (!string.IsNullOrWhiteSpace(state))
+            State = state.Trim();
+
+        if (!string.IsNullOrWhiteSpace(pincode))
+            Pincode = pincode.Trim();
+
         UpdatedBy = updatedBy;
+
         SetUpdatedAt();
     }
 

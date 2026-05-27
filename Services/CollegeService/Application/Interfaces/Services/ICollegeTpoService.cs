@@ -11,6 +11,8 @@ public interface ICollegeTpoService
     Task<TpoDetailsDto?> GetPrimaryTpoByCollegeIdAsync(Guid collegeId, CancellationToken ct);
     Task<bool> IsPrimaryTpoAsync(Guid collegeId, Guid userId, CancellationToken ct);
     Task<PaginatedResponseDto<TpoDetailsDto>> GetTposAsync(TpoFilterRequestDto filter, CancellationToken ct);
-    Task<TpoDetailsDto> ActivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct);
-    Task<TpoDetailsDto> DeactivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct);
+    Task ActivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct);
+    Task DeactivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct);
+    Task AssignPrimaryScopeAsync(Guid tpoId, CancellationToken ct);
+    Task RemovePrimaryScopeAsync(Guid tpoId, CancellationToken ct);
 }

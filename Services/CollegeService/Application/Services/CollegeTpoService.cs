@@ -68,34 +68,16 @@ public class CollegeTpoService : ICollegeTpoService
         var collegeTpo = CollegeTpo.Create(
             collegeId: request.CollegeId,
             collegeName: college.Name,
+            collegeCode: college.Code,
             fullName: request.FullName,
             tpoId: identityResult.UserId,
             email: request.Email,
             assignedBy: assignedBy);
 
         await _tpoRepository.AddAsync(collegeTpo, ct);
+        await _tpoRepository.SaveChangesAsync(ct);
 
-        try
-        {
-            await _tpoRepository.SaveChangesAsync(ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to persist TPO mapping for user {TpoUserId} — attempting compensation", identityResult.UserId);
-            // Try to deactivate the identity account to avoid leaving an active orphaned user
-            try
-            {
-                await _identityClient.DeactivateTpoAccount(identityResult.UserId, ct);
-            }
-            catch (Exception inner)
-            {
-                _logger.LogError(inner, "Compensation failed when deactivating identity user {UserId}", identityResult.UserId);
-            }
-
-            throw;
-        }
-
-        var tpo = collegeTpo; // we already have the entity we just saved
+        var tpo = collegeTpo;
 
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
             ?? throw new NotFoundException("TPO not found");
@@ -112,7 +94,6 @@ public class CollegeTpoService : ICollegeTpoService
 
     public async Task RemoveTpoAsync(Guid collegeId, Guid userId, CancellationToken ct)
     {
-        // NOTE: caller identity should be passed in or resolved from context. TODO: wire ICurrentUserService.
         Guid deactivatedBy = Guid.NewGuid(); // fallback to a generated id until caller identity is available
         var college = await _collegeRepository.GetByIdAsync(collegeId, ct)
             ?? throw new NotFoundException("College", collegeId);
@@ -231,8 +212,10 @@ public class CollegeTpoService : ICollegeTpoService
         };
     }
 
-    public async Task<TpoDetailsDto> ActivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
+    public async Task ActivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
     {
+        Guid userId = Guid.NewGuid(); //TODO: Update it from jwt token
+
         var details = await _identityClient.ActivateTpoAccount(tpoId, ct)
             ?? throw new NotFoundException("TPO not found");
 
@@ -240,44 +223,61 @@ public class CollegeTpoService : ICollegeTpoService
         var collegeTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
             ?? throw new NotFoundException("TPO mapping not found");
 
-        return new TpoDetailsDto
-        {
-            UserId = details.UserId,
-            FullName = details.FullName,
-            Email = details.Email,
-            PhoneNumber = details.PhoneNumber,
-            CollegeId = details.CollegeId,
-            VerificationStatus = details.VerificationStatus,
-            AccountStatus = details.AccountStatus,
-            CollegeCode = details.CollegeCode,
-            CollegeName = details.CollegeName,
-            IsPrimary = collegeTpo.IsPrimary
-        };
+        collegeTpo.Activate(userId);
+
+        var events = collegeTpo.DomainEvents.ToList();
+        await _tpoRepository.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        collegeTpo.ClearDomainEvents();
     }
 
-    public async Task<TpoDetailsDto> DeactivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
+    public async Task DeactivatePrimaryTpoAsync(Guid tpoId, CancellationToken ct)
     {
+        Guid userId = Guid.NewGuid(); //TODO: Update it from jwt token
+
         var details = await _identityClient.DeactivateTpoAccount(tpoId, ct)
             ?? throw new NotFoundException("TPO not found");
 
         var collegeTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
             ?? throw new NotFoundException("TPO mapping not found");
 
-        return new TpoDetailsDto
-        {
-            UserId = details.UserId,
-            FullName = details.FullName,
-            Email = details.Email,
-            PhoneNumber = details.PhoneNumber,
-            CollegeId = details.CollegeId,
-            VerificationStatus = details.VerificationStatus,
-            AccountStatus = details.AccountStatus,
-            CollegeCode = details.CollegeCode,
-            CollegeName = details.CollegeName,
-            IsPrimary = collegeTpo.IsPrimary
-        };
+        collegeTpo.Activate(userId);
+
+        var events = collegeTpo.DomainEvents.ToList();
+        await _tpoRepository.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        collegeTpo.ClearDomainEvents();
     }
 
+    public async Task AssignPrimaryScopeAsync(Guid tpoId, CancellationToken ct)
+    {
+        Guid userId = Guid.NewGuid(); // TODO
+
+        var existingTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
+            ?? throw new NotFoundException("TPOProfile", tpoId);
+
+        existingTpo.AssignPrimaryScope(userId);
+
+        var events = existingTpo.DomainEvents.ToList();
+        await _tpoRepository.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        existingTpo.ClearDomainEvents();
+    }
+
+    public async Task RemovePrimaryScopeAsync(Guid tpoId, CancellationToken ct)
+    {
+        Guid userId = Guid.NewGuid(); // TODO
+
+        var existingTpo = await _tpoRepository.GetByTpoIdAsync(tpoId, ct)
+            ?? throw new NotFoundException("TPOProfile", tpoId);
+
+        existingTpo.RemovePrimaryScope(userId);
+
+        var events = existingTpo.DomainEvents.ToList();
+        await _tpoRepository.SaveChangesAsync(ct);
+        await _eventPublisher.PublishAsync(events, ct);
+        existingTpo.ClearDomainEvents();
+    }
 
     private static TpoDetailsDto MapToDetailsDto(TpoDetails tpo, College college, bool isPrimary)
         => new()
