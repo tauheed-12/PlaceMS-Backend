@@ -1,44 +1,88 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.EntityFrameworkCore;
+using Serilog;
+using StudentService.API.Extensions;
+using StudentService.Infrastructure.Persistence;
+using SharedKernel.Middleware;
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Information("Starting StudentService...");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // ── Serilog ──────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, services, config) =>
+        config.ReadFrom.Configuration(ctx.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext()
+              .Enrich.WithMachineName()
+              .Enrich.WithProperty("Service", "StudentService")
+              .WriteTo.Console(
+                  outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{Service}] {Message:lj}{NewLine}{Exception}"));
+
+    // ── Services ─────────────────────────────────────────────────
+    builder.Services
+        .AddSettings(builder.Configuration)
+        .AddDatabase(builder.Configuration)
+        .AddJwtAuthentication(builder.Configuration)
+        .AddValidation()
+        .AddApplicationServices()
+        .AddMinioStorage(builder.Configuration)
+        .AddKafkaConsumers(builder.Configuration)
+        .AddGlobalExceptionHandling()
+        .AddSwagger()
+        .AddControllers();
+
+    builder.Services.AddCors(options =>
+        options.AddPolicy("AllowGateway", policy =>
+            policy.WithOrigins(
+                      builder.Configuration["AllowedOrigins"]?.Split(',') ?? Array.Empty<string>())
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()));
+
+    // ── Build ────────────────────────────────────────────────────
+    var app = builder.Build();
+
+    // ── Auto-migrate ─────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<StudentDbContext>();
+        await db.Database.MigrateAsync();
+        Log.Information("Database migration applied.");
+    }
+
+    // ── Middleware Pipeline ───────────────────────────────────────
+    app.UseGlobalExceptionHandler();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "PMS Student Service v1");
+            c.RoutePrefix = string.Empty;
+        });
+    }
+
+    app.UseSerilogRequestLogging(opts =>
+        opts.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms");
+
+    app.UseCors("AllowGateway");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    await app.RunAsync();
 }
-
-app.UseHttpsRedirection();
-
-var summaries = new[]
+catch (Exception ex)
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
+    Log.Fatal(ex, "StudentService failed to start.");
+}
+finally
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    Log.CloseAndFlush();
 }
