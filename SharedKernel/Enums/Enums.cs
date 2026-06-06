@@ -24,7 +24,8 @@ namespace SharedKernel.Enums
     {
         Pending = 1,
         Approved = 2,
-        Rejected = 3
+        Rejected = 3,
+        ChangesRequested = 4
     }
 
     // Represents the status of a student's application to a drive
