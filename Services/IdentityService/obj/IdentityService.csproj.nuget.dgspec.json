@@ -1,33 +1,39 @@
 {
   "format": 1,
   "restore": {
-    "/home/tauheed/Desktop/PlaceMS/Services/IdentityService/IdentityService.csproj": {}
+    "C:\\Desktop\\PMS-Backend\\Services\\IdentityService\\IdentityService.csproj": {}
   },
   "projects": {
-    "/home/tauheed/Desktop/PlaceMS/Services/IdentityService/IdentityService.csproj": {
+    "C:\\Desktop\\PMS-Backend\\Services\\IdentityService\\IdentityService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/tauheed/Desktop/PlaceMS/Services/IdentityService/IdentityService.csproj",
+        "projectUniqueName": "C:\\Desktop\\PMS-Backend\\Services\\IdentityService\\IdentityService.csproj",
         "projectName": "IdentityService",
-        "projectPath": "/home/tauheed/Desktop/PlaceMS/Services/IdentityService/IdentityService.csproj",
-        "packagesPath": "/home/tauheed/.nuget/packages/",
-        "outputPath": "/home/tauheed/Desktop/PlaceMS/Services/IdentityService/obj/",
+        "projectPath": "C:\\Desktop\\PMS-Backend\\Services\\IdentityService\\IdentityService.csproj",
+        "packagesPath": "C:\\Users\\sheik\\.nuget\\packages\\",
+        "outputPath": "C:\\Desktop\\PMS-Backend\\Services\\IdentityService\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/home/tauheed/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\sheik\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/home/tauheed/Desktop/PlaceMS/SharedKernel/SharedKernel.csproj": {
-                "projectPath": "/home/tauheed/Desktop/PlaceMS/SharedKernel/SharedKernel.csproj"
+              "C:\\Desktop\\PMS-Backend\\SharedKernel\\SharedKernel.csproj": {
+                "projectPath": "C:\\Desktop\\PMS-Backend\\SharedKernel\\SharedKernel.csproj"
               }
             }
           }
@@ -36,7 +42,13 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -122,6 +134,24 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Host.win-x64",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -130,26 +160,32 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/home/tauheed/Desktop/PlaceMS/SharedKernel/SharedKernel.csproj": {
+    "C:\\Desktop\\PMS-Backend\\SharedKernel\\SharedKernel.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/tauheed/Desktop/PlaceMS/SharedKernel/SharedKernel.csproj",
+        "projectUniqueName": "C:\\Desktop\\PMS-Backend\\SharedKernel\\SharedKernel.csproj",
         "projectName": "SharedKernel",
-        "projectPath": "/home/tauheed/Desktop/PlaceMS/SharedKernel/SharedKernel.csproj",
-        "packagesPath": "/home/tauheed/.nuget/packages/",
-        "outputPath": "/home/tauheed/Desktop/PlaceMS/SharedKernel/obj/",
+        "projectPath": "C:\\Desktop\\PMS-Backend\\SharedKernel\\SharedKernel.csproj",
+        "packagesPath": "C:\\Users\\sheik\\.nuget\\packages\\",
+        "outputPath": "C:\\Desktop\\PMS-Backend\\SharedKernel\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/home/tauheed/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\sheik\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -162,7 +198,13 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "10.0.100"
       },
       "frameworks": {
         "net8.0": {
@@ -196,6 +238,20 @@
           ],
           "assetTargetFallback": true,
           "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.NETCore.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            },
+            {
+              "name": "Microsoft.WindowsDesktop.App.Ref",
+              "version": "[8.0.22, 8.0.22]"
+            }
+          ],
           "frameworkReferences": {
             "Microsoft.AspNetCore.App": {
               "privateAssets": "none"
@@ -204,7 +260,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/lib/dotnet/sdk/8.0.126/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.101/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
