@@ -1,62 +1,75 @@
 using SharedKernel.Abstractions;
-using DriveService.Domain.Enums;
+using SharedKernel.Enums;
 
 namespace DriveService.Domain.Entities;
 
 public class DriveCollege : BaseEntity
 {
     private DriveCollege() { }
-    public Guid Id { get; private set; }
+
     public Guid DriveId { get; private set; }
     public Guid CollegeId { get; private set; }
     public string CollegeName { get; private set; } = string.Empty;
-    public Guid TpoUserId { get; private set; }
-    public ApprovalStatus ApprovalStatus { get; private set; }
+    public Guid? TpoUserId { get; private set; }
+    public string? TpoEmail { get; private set; }
+    public string? TpoName { get; private set; }
+    public DriveApprovalStatus ApprovalStatus { get; private set; }
     public string? TpoNote { get; private set; }
     public DateTime? ReviewedAt { get; private set; }
-    public DateTime CreatedAt { get; private set; }
-    public DateTime UpdatedAt { get; private set; }
     public Drive Drive { get; private set; } = null!;
 
     public static DriveCollege Create(
         Guid driveId,
         Guid collegeId,
         string collegeName,
-        Guid tpoUserId)
+        Guid? tpoUserId,
+        string? tpoEmail,
+        string? tpoName)
     {
         return new DriveCollege
         {
-            Id = Guid.NewGuid(),
             DriveId = driveId,
             CollegeId = collegeId,
             CollegeName = collegeName,
             TpoUserId = tpoUserId,
-            ApprovalStatus = ApprovalStatus.Pending,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            TpoEmail = tpoEmail,
+            TpoName = tpoName,
+            ApprovalStatus = DriveApprovalStatus.Pending
         };
     }
 
-    public void Approve()
+    public void Approve(Guid tpoUserId, string? note)
     {
-        ApprovalStatus = ApprovalStatus.Approved;
+        TpoUserId = tpoUserId;
+        ApprovalStatus = DriveApprovalStatus.Approved;
+        TpoNote = note;
         ReviewedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void Reject(string reason)
+    public void Reject(Guid tpoUserId, string reason)
     {
-        ApprovalStatus = ApprovalStatus.Rejected;
+        TpoUserId = tpoUserId;
+        ApprovalStatus = DriveApprovalStatus.Rejected;
         TpoNote = reason;
         ReviewedAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void RequestChanges(string note)
+    public void RequestChanges(Guid tpoUserId, string note)
     {
-        ApprovalStatus = ApprovalStatus.ChangesRequested;
+        TpoUserId = tpoUserId;
+        ApprovalStatus = DriveApprovalStatus.ChangesRequested;
         TpoNote = note;
         ReviewedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ResetToPending()
+    {
+        ApprovalStatus = DriveApprovalStatus.Pending;
+        TpoNote = null;
+        ReviewedAt = null;
         UpdatedAt = DateTime.UtcNow;
     }
 }

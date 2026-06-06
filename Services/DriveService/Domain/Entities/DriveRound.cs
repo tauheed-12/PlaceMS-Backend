@@ -6,8 +6,6 @@ public class DriveRound : BaseEntity
 {
     private DriveRound() { }
 
-    public Guid Id { get; private set; }
-
     public Guid DriveId { get; private set; }
 
     public int RoundNumber { get; private set; }
@@ -23,7 +21,6 @@ public class DriveRound : BaseEntity
     {
         return new DriveRound
         {
-            Id = Guid.NewGuid(),
             DriveId = driveId,
             RoundNumber = roundNumber,
             RoundName = roundName

@@ -103,6 +103,7 @@ public class Drive : AggregateRoot
             drive.CompanyName,
             drive.JobRole,
             drive.RecruiterUserId,
+            drive.ApplicationDeadline,
             drive._driveColleges.Select(dc => new DriveCollegeInfo(
                 dc.CollegeId, dc.CollegeName, dc.TpoUserId, dc.TpoEmail, dc.TpoName)).ToList()));
 
