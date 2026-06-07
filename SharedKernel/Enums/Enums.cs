@@ -35,7 +35,9 @@ namespace SharedKernel.Enums
         UnderReview = 2,
         Shortlisted = 3,
         Offered = 4,
-        Rejected = 5
+        Accepted = 5,
+        Rejected = 6,
+        Withdrawn = 7,
     }
 
     // Represents the status of a student's placement for TPO reporting
