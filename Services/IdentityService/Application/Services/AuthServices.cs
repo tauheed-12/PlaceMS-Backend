@@ -16,7 +16,7 @@ public class AuthService : IAuthService
     private readonly IJwtService _jwtService;
     private readonly IPasswordService _passwordService;
     private readonly IDomainEventPublisher _eventPublisher;
-    private readonly ICollegeServiceClient _collegeClient;
+    // private readonly ICollegeServiceClient _collegeClient;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -24,14 +24,14 @@ public class AuthService : IAuthService
         IJwtService jwtService,
         IPasswordService passwordService,
         IDomainEventPublisher eventPublisher,
-        ICollegeServiceClient collegeClient,
+        // ICollegeServiceClient collegeClient,
         ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _passwordService = passwordService;
         _eventPublisher = eventPublisher;
-        _collegeClient = collegeClient;
+        // _collegeClient = collegeClient;
         _logger = logger;
     }
 
@@ -85,18 +85,24 @@ public class AuthService : IAuthService
         Guid? collegeId = request.CollegeId;
         string? collegeCode = request.CollegeCode;
 
-        // Validate college exists if provided
-        if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
+        var college = new
         {
-            var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
-            if (college is null || !college.IsActive)
-                throw new NotFoundException("College", collegeCode);
+            CollegeId = Guid.NewGuid(),
+            CollegeCode = request.CollegeCode
+        };
 
-            if (college.CollegeId != collegeId.Value)
-                throw new DomainValidationException("College ID and college code do not match.");
+        // Validate college exists if provided
+        // if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
+        // {
+        //     var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
+        //     if (college is null || !college.IsActive)
+        //         throw new NotFoundException("College", collegeCode);
 
-            collegeId = college.CollegeId;
-        }
+        //     if (college.CollegeId != collegeId.Value)
+        //         throw new DomainValidationException("College ID and college code do not match.");
+
+        //     collegeId = college.CollegeId;
+        // }
 
         var passwordHash = _passwordService.HashPassword(request.Password);
 
@@ -111,14 +117,15 @@ public class AuthService : IAuthService
 
         var verificationToken = user.GenerateEmailVerificationToken();
 
+        _logger.LogInformation("User verification token {VerificationToken}", verificationToken);
         await _userRepository.AddAsync(user, ct);
 
         // Publish domain events (triggers verification email via Notification Service)
-        var events = user.DomainEvents.ToList();
+        // var events = user.DomainEvents.ToList();
+        // await _userRepository.SaveChangesAsync(ct);
+        // await _eventPublisher.PublishAsync(events, ct);
+        // user.ClearDomainEvents();
         await _userRepository.SaveChangesAsync(ct);
-        await _eventPublisher.PublishAsync(events, ct);
-        user.ClearDomainEvents();
-
         _logger.LogInformation("User {UserId} registered with role {Role}", user.Id, request.Role);
 
         return new RegisterResponse { UserId = user.Id, Email = user.Email };
@@ -131,11 +138,16 @@ public class AuthService : IAuthService
             throw new ConflictException("User", "email", request.Email);
 
         // Validate college code against College Service
-        var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
-            ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
+        // var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
+        //     ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
 
-        if (!college.IsActive)
-            throw new BusinessRuleException("This college is not accepting registrations.");
+        // if (!college.IsActive)
+        //     throw new BusinessRuleException("This college is not accepting registrations.");
+        var college = new
+        {
+            CollegeId = Guid.NewGuid(),
+            CollegeCode = request.CollegeCode
+        };
 
         var passwordHash = _passwordService.HashPassword(request.Password);
 
@@ -149,13 +161,14 @@ public class AuthService : IAuthService
             college.CollegeCode);
 
         var verificationToken = user.GenerateEmailVerificationToken();
+        _logger.LogInformation("User verification token {VerificationToken}", verificationToken);
 
         await _userRepository.AddAsync(user, ct);
 
-        var events = user.DomainEvents.ToList();
-        await _userRepository.SaveChangesAsync(ct);
-        await _eventPublisher.PublishAsync(events, ct);
-        user.ClearDomainEvents();
+        // var events = user.DomainEvents.ToList();
+        // await _userRepository.SaveChangesAsync(ct);
+        // await _eventPublisher.PublishAsync(events, ct);
+        // user.ClearDomainEvents();
 
         _logger.LogInformation("Student {UserId} registered for college {CollegeCode}", user.Id, request.CollegeCode);
 
@@ -202,6 +215,7 @@ public class AuthService : IAuthService
         if (user.VerificationStatus != VerificationStatus.Verified) return;
 
         var resetToken = user.GeneratePasswordResetToken();
+        _logger.LogInformation("Forogot password token {ResetToken}", resetToken);
         await _userRepository.SaveChangesAsync(ct);
 
         // Publish to Kafka → Notification Service sends reset email

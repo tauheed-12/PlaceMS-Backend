@@ -58,6 +58,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(30)
             .IsRequired();
 
+        builder.Property(u => u.AccountStatus)
+            .HasColumnName("account_status")
+            .HasConversion(
+                v => v.ToString(),
+                v => Enum.Parse<AccountStatus>(v))
+            .HasMaxLength(30)
+            .IsRequired();
+
         builder.Property(u => u.CollegeId)
             .HasColumnName("college_id")
             .IsRequired(false);
