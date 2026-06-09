@@ -16,7 +16,7 @@ public class AuthService : IAuthService
     private readonly IJwtService _jwtService;
     private readonly IPasswordService _passwordService;
     private readonly IDomainEventPublisher _eventPublisher;
-    // private readonly ICollegeServiceClient _collegeClient;
+    private readonly ICollegeServiceClient _collegeClient;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
@@ -24,14 +24,14 @@ public class AuthService : IAuthService
         IJwtService jwtService,
         IPasswordService passwordService,
         IDomainEventPublisher eventPublisher,
-        // ICollegeServiceClient collegeClient,
+        ICollegeServiceClient collegeClient,
         ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _passwordService = passwordService;
         _eventPublisher = eventPublisher;
-        // _collegeClient = collegeClient;
+        _collegeClient = collegeClient;
         _logger = logger;
     }
 
@@ -85,24 +85,18 @@ public class AuthService : IAuthService
         Guid? collegeId = request.CollegeId;
         string? collegeCode = request.CollegeCode;
 
-        var college = new
-        {
-            CollegeId = Guid.NewGuid(),
-            CollegeCode = request.CollegeCode
-        };
-
         // Validate college exists if provided
-        // if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
-        // {
-        //     var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
-        //     if (college is null || !college.IsActive)
-        //         throw new NotFoundException("College", collegeCode);
+        if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
+        {
+            var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
+            if (college is null || !college.IsActive)
+                throw new NotFoundException("College", collegeCode);
 
-        //     if (college.CollegeId != collegeId.Value)
-        //         throw new DomainValidationException("College ID and college code do not match.");
+            if (college.CollegeId != collegeId.Value)
+                throw new DomainValidationException("College ID and college code do not match.");
 
-        //     collegeId = college.CollegeId;
-        // }
+            collegeId = college.CollegeId;
+        }
 
         var passwordHash = _passwordService.HashPassword(request.Password);
 
@@ -120,12 +114,9 @@ public class AuthService : IAuthService
         _logger.LogInformation("User verification token {VerificationToken}", verificationToken);
         await _userRepository.AddAsync(user, ct);
 
-        // Publish domain events (triggers verification email via Notification Service)
-        // var events = user.DomainEvents.ToList();
-        // await _userRepository.SaveChangesAsync(ct);
-        // await _eventPublisher.PublishAsync(events, ct);
-        // user.ClearDomainEvents();
         await _userRepository.SaveChangesAsync(ct);
+        await PublishDomainEventsAsync(user, ct);
+
         _logger.LogInformation("User {UserId} registered with role {Role}", user.Id, request.Role);
 
         return new RegisterResponse { UserId = user.Id, Email = user.Email };
@@ -138,16 +129,11 @@ public class AuthService : IAuthService
             throw new ConflictException("User", "email", request.Email);
 
         // Validate college code against College Service
-        // var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
-        //     ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
+        var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
+            ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
 
-        // if (!college.IsActive)
-        //     throw new BusinessRuleException("This college is not accepting registrations.");
-        var college = new
-        {
-            CollegeId = Guid.NewGuid(),
-            CollegeCode = request.CollegeCode
-        };
+        if (!college.IsActive)
+            throw new BusinessRuleException("This college is not accepting registrations.");
 
         var passwordHash = _passwordService.HashPassword(request.Password);
 
@@ -165,10 +151,8 @@ public class AuthService : IAuthService
 
         await _userRepository.AddAsync(user, ct);
 
-        // var events = user.DomainEvents.ToList();
-        // await _userRepository.SaveChangesAsync(ct);
-        // await _eventPublisher.PublishAsync(events, ct);
-        // user.ClearDomainEvents();
+        await _userRepository.SaveChangesAsync(ct);
+        await PublishDomainEventsAsync(user, ct);
 
         _logger.LogInformation("Student {UserId} registered for college {CollegeCode}", user.Id, request.CollegeCode);
 
@@ -183,10 +167,8 @@ public class AuthService : IAuthService
 
         user.VerifyEmail(token);
 
-        var events = user.DomainEvents.ToList();
         await _userRepository.SaveChangesAsync(ct);
-        await _eventPublisher.PublishAsync(events, ct);
-        user.ClearDomainEvents();
+        await PublishDomainEventsAsync(user, ct);
 
         return new VerifyEmailResponse { Verified = true, Message = "Email verified successfully. You can now log in." };
     }
@@ -297,6 +279,16 @@ public class AuthService : IAuthService
     }
 
     // ── Private Helpers ──────────────────────────────────────────────
+    private async Task PublishDomainEventsAsync(User user, CancellationToken ct)
+    {
+        var events = user.DomainEvents.ToList();
+        if (events.Count == 0)
+            return;
+
+        await _eventPublisher.PublishAsync(events, ct);
+        user.ClearDomainEvents();
+    }
+
     private async Task<User?> FindUserByRefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
         // This requires a custom repo query since EF needs to traverse the token collection
