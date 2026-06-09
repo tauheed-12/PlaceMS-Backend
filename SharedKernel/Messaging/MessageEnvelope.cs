@@ -45,6 +45,7 @@ public record UserRegisteredEvent
     public string FullName { get; init; } = string.Empty;
     public string Role { get; init; } = string.Empty;
     public string VerificationToken { get; init; } = string.Empty;
+    public string VerificationLink { get; init; } = string.Empty;
 }
 
 /// <summary>pms.user.email-verification — fired to trigger verification email.</summary>

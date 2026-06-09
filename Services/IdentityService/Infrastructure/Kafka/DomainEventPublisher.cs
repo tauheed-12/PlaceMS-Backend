@@ -62,11 +62,13 @@ public class DomainEventPublisher : IDomainEventPublisher
                             FullName = e.FullName,
                             Role = e.Role,
                             // Token is retrieved separately by the email service
-                            VerificationToken = string.Empty
+                            VerificationToken = e.EmailVerificationToken,
+                            VerificationLink = e.EmailVerificationLink
                         }
                     }, ct);
+                break;
 
-                // Also fire verification email event
+            case UserEmailVerificationDomainEvent e:
                 await _kafkaPublisher.PublishAsync(
                     KafkaTopics.UserEmailVerification,
                     new MessageEnvelope<UserEmailVerificationEvent>

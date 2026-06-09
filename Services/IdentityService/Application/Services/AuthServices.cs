@@ -179,11 +179,9 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEmailAsync(request.Email, ct);
         if (user is null || user.VerificationStatus == VerificationStatus.Verified) return;
 
-        user.GenerateEmailVerificationToken();
+        user.RegenerateEmailVerificationToken();
         await _userRepository.SaveChangesAsync(ct);
 
-        // Raise event manually here since GenerateEmailVerificationToken doesn't raise a domain event
-        // (we could add one, but keeping domain events minimal)
         _logger.LogInformation("Resent verification email to {Email}", request.Email);
     }
 

@@ -59,9 +59,6 @@ public class User : AggregateRoot
             VerificationStatus = VerificationStatus.Unverified,
             AccountStatus = AccountStatus.Active
         };
-
-        user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id, user.FullName, user.Email, user.Role.ToString()));
-
         return user;
     }
 
@@ -72,9 +69,23 @@ public class User : AggregateRoot
         EmailVerificationToken = token;
         EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
         SetUpdatedAt();
+
+        string emailVerificationLink = $"http://localhost:3000/verify-email?token={token}";
+        RaiseDomainEvent(new UserCreatedDomainEvent(Id, FullName, Email, Role.ToString(), EmailVerificationToken, emailVerificationLink));
         return token;
     }
 
+    public string RegenerateEmailVerificationToken()
+    {
+        string token = GenerateSecureToken();
+        EmailVerificationToken = token;
+        EmailVerificationTokenExpiry = DateTime.UtcNow.AddHours(24);
+        SetUpdatedAt();
+
+        string emailVerificationLink = $"http://localhost:3000/verify-email?token={token}";
+        RaiseDomainEvent(new UserEmailVerificationDomainEvent(Id, Email, FullName, EmailVerificationToken, emailVerificationLink));
+        return token;
+    }
     // Verifies the user's email by checking the provided token against the stored token and ensuring it has not expired. If the verification is successful, it updates the user's verification status and records the time of verification.
     public void VerifyEmail(string token)
     {
