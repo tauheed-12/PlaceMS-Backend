@@ -53,7 +53,7 @@ public class NotificationPreferenceConfiguration : IEntityTypeConfiguration<Noti
         builder.Property(p => p.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(p => p.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(p => p.NotificationType).HasColumnName("notification_type")
-            .HasConversion(v => v.ToString(), v => Enum.Parse<NotificationEnums.NotificationType>(v))
+            .HasConversion(v => v.ToString(), v => Enum.Parse<NotificationType>(v))
             .HasMaxLength(60).IsRequired();
         builder.Property(p => p.EmailEnabled).HasColumnName("email_enabled").HasDefaultValue(true);
         builder.Property(p => p.InAppEnabled).HasColumnName("in_app_enabled").HasDefaultValue(true);

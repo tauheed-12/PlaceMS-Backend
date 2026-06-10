@@ -19,15 +19,16 @@ try
               .WriteTo.Console());
 
     builder.Services
-        .AddSettings(builder.Configuration)
-        .AddDatabase(builder.Configuration)
-        .AddJwtAuthentication(builder.Configuration)
-        .AddApplicationServices()
-        .AddKafkaConsumer()
-        .AddSignalR()
-        .AddGlobalExceptionHandling()
-        .AddSwagger()
-        .AddControllers();
+    .AddSettings(builder.Configuration)
+    .AddDatabase(builder.Configuration)
+    .AddJwtAuthentication(builder.Configuration)
+    .AddApplicationServices()
+    .AddKafkaConsumer()
+    .AddGlobalExceptionHandling()
+    .AddSwagger()
+    .AddControllers();
+
+    builder.Services.AddSignalR();
 
     builder.Services.AddCors(options =>
         options.AddPolicy("AllowGateway", policy =>

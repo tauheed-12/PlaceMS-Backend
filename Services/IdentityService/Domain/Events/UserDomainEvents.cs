@@ -2,7 +2,7 @@ using SharedKernel.Abstractions;
 
 namespace IdentityService.Domain.Events;
 
-public record UserCreatedDomainEvent(Guid UserId, string Email, string FullName, string Role, string EmailVerificationToken, string EmailVerificationLink) : BaseDomainEvent
+public record UserCreatedDomainEvent(Guid UserId, string FullName, string Email, string Role, string EmailVerificationToken, string EmailVerificationLink) : BaseDomainEvent
 {
     public override string EventType => "user.created";
 }

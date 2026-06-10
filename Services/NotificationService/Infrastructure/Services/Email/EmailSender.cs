@@ -34,6 +34,7 @@ public class SmtpEmailSender : IEmailSender
             IsBodyHtml = message.HtmlBody is not null
         };
 
+        _logger.LogInformation("Preparing to send email to {To} — Subject: {Subject} Email: {Email}", message.To, message.Subject, message.To);
         mail.To.Add(new MailAddress(message.To, message.ToName));
 
         if (message.HtmlBody is not null)

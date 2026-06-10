@@ -83,6 +83,8 @@ public class NotificationDispatcher : INotificationDispatcher
                 request.ReferenceId,
                 request.ReferenceType);
 
+            _logger.LogInformation("Dispatching {notification}", notification);
+
             await _repo.AddAsync(notification, ct);
             await _repo.SaveChangesAsync(ct);
 

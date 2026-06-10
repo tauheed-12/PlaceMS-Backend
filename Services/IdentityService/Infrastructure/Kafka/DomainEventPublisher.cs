@@ -61,7 +61,21 @@ public class DomainEventPublisher : IDomainEventPublisher
                             Email = e.Email,
                             FullName = e.FullName,
                             Role = e.Role,
-                            // Token is retrieved separately by the email service
+                        }
+                    }, ct);
+
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.UserEmailVerification,
+                    new MessageEnvelope<UserEmailVerificationEvent>
+                    {
+                        Source = "IdentityService",
+                        Topic = KafkaTopics.UserEmailVerification,
+                        EventType = "user.email-verification",
+                        Payload = new UserEmailVerificationEvent
+                        {
+                            UserId = e.UserId,
+                            Email = e.Email,
+                            FullName = e.FullName,
                             VerificationToken = e.EmailVerificationToken,
                             VerificationLink = e.EmailVerificationLink
                         }
