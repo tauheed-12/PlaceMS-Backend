@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0faf8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0E9F8E, #059669);
+            padding: 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .body {
+            padding: 32px;
+            color: #3D5449;
+            line-height: 1.7;
+        }
+
+        .drive-box {
+            background: #e6f2ee;
+            border-left: 4px solid #0E9F8E;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .drive-box p {
+            margin: 4px 0;
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 24px 0;
+            padding: 14px 32px;
+            background: #0E9F8E;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .footer {
+            background: #f0faf8;
+            padding: 16px 32px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #7A9490;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Drive Approval Request</h1>
+        </div>
+        <div class="body">
+            <p>Hi <strong>{{TpoName}}</strong>,</p>
+            <p>A new placement drive has been submitted for your review for <strong>{{CollegeName}}</strong>.</p>
+            <div class="drive-box">
+                <p><strong>Company:</strong> {{CompanyName}}</p>
+                <p><strong>Role:</strong> {{JobRole}}</p>
+                <p><strong>CTC:</strong> {{CTC}}</p>
+                <p><strong>Deadline:</strong> {{Deadline}}</p>
+                <p><strong>Min CGPA:</strong> {{MinCgpa}}</p>
+            </div>
+            <a href="{{ActionUrl}}" class="btn">Review Drive</a>
+        </div>
+        <div class="footer">© 2025 Placement Management System</div>
+    </div>
+</body>
+
+</html>

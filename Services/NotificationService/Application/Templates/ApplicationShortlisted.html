@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f6ff;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #059669, #0E9F8E);
+            padding: 32px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #fff;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .body {
+            padding: 32px;
+            color: #3D4F6A;
+            line-height: 1.7;
+        }
+
+        .highlight {
+            background: #e6f9f0;
+            border-left: 4px solid #059669;
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            margin: 24px 0;
+            padding: 14px 32px;
+            background: #059669;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        .footer {
+            background: #f0f6ff;
+            padding: 16px 32px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #7A90AA;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 You've Been Shortlisted!</h1>
+        </div>
+        <div class="body">
+            <p>Hi <strong>{{StudentName}}</strong>,</p>
+            <p>Congratulations! You have been shortlisted for the following drive:</p>
+            <div class="highlight">
+                <p><strong>Company:</strong> {{CompanyName}}</p>
+                <p><strong>Role:</strong> {{JobRole}}</p>
+                <p><strong>CTC:</strong> {{CTC}}</p>
+            </div>
+            <p>Please check your portal for further instructions and next steps.</p>
+            <a href="{{ActionUrl}}" class="btn">View Application</a>
+        </div>
+        <div class="footer">© 2025 Placement Management System</div>
+    </div>
+</body>
+
+</html>
