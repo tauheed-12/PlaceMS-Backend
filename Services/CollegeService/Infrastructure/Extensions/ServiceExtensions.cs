@@ -1,4 +1,7 @@
 using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Clients;
+using CollegeService.Application.Interfaces.Repositories;
+using CollegeService.Application.Interfaces.Services;
 using CollegeService.Infrastructure.Persistence;
 using CollegeService.Infrastructure.Repositories;
 using CollegeService.Infrastructure.Services;

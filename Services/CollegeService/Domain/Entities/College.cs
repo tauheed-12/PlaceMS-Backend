@@ -20,6 +20,7 @@ public class College : AggregateRoot
     public Guid RegisteredBy { get; private set; }
     public Guid? UpdatedBy { get; private set; }
     public AccountStatus AccountStatus { get; private set; } = AccountStatus.Active;
+    public VerificationStatus VerificationStatus { get; private set; } = VerificationStatus.Unverified;
 
     public College() { }
 
@@ -39,6 +40,7 @@ public class College : AggregateRoot
             Pincode = pincode.Trim(),
             RegisteredBy = createdBy,
         };
+        college.VerificationStatus = VerificationStatus.Unverified;
         college.RaiseDomainEvent(new CollegeCreatedDomainEvent(college.Id, college.Name, college.Code, createdBy));
         college.SetUpdatedAt();
 
