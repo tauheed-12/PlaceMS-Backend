@@ -30,6 +30,7 @@ try
         .AddDatabase(builder.Configuration)
         .AddJwtAuthentication(builder.Configuration)
         .AddValidation()
+        .AddHttpClients(builder.Configuration)
         .AddApplicationServices()
         .AddGlobalExceptionHandling()
         .AddSwagger()

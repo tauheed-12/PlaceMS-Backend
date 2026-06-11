@@ -20,6 +20,7 @@ public interface IAuthService
     Task LogoutAsync(string refreshToken, CancellationToken ct = default);
     Task LogoutAllDevicesAsync(Guid userId, CancellationToken ct = default);
     Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default);
+    Task<ServiceTokenResponse> GetServiceTokenAsync(ClientCredentialsRequest request, CancellationToken ct = default);
 }
 
 // JWT generation and validation.
@@ -27,6 +28,7 @@ public interface IAuthService
 public interface IJwtService
 {
     string GenerateAccessToken(User user);
+    string GenerateServiceToken(string clientId);
     // bool ValidateToken(string token, out Guid userId);
 }
 

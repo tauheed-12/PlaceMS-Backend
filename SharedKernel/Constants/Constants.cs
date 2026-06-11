@@ -11,6 +11,7 @@ public static class CustomClaimTypes
     public const string CollegeCode = "college_code";
     public const string VerificationStatus = "verification_status";
     public const string FullName = "full_name";
+    public const string ServiceClientId = "client_id";
 }
 
 // This class defines constant strings for user roles used in authorization and across all services.

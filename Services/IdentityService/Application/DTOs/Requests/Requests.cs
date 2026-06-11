@@ -66,3 +66,10 @@ public record ResendVerificationEmailRequest
 {
     public string Email { get; init; } = string.Empty;
 }
+
+// OAuth 2.0 Client Credentials request for service-to-service authentication
+public record ClientCredentialsRequest
+{
+    public string ClientId { get; init; } = string.Empty;
+    public string ClientSecret { get; init; } = string.Empty;
+}

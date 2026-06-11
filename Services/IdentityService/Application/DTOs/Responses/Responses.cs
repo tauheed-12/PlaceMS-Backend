@@ -41,3 +41,11 @@ public record VerifyEmailResponse
     public bool Verified { get; init; }
     public string Message { get; init; } = string.Empty;
 }
+
+// Service-to-service token response (no refresh token for services)
+public record ServiceTokenResponse
+{
+    public string AccessToken { get; init; } = string.Empty;
+    public string TokenType { get; init; } = "Bearer";
+    public int ExpiresIn { get; init; } // Seconds
+}

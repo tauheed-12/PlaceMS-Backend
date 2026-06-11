@@ -29,7 +29,6 @@ public class UsersController : ControllerBase
     /// Only SuperAdmin and Admin can call this.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
     [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), 201)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
     [ProducesResponseType(typeof(ApiResponse), 409)]

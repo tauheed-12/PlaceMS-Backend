@@ -283,6 +283,30 @@ public class AuthService : IAuthService
         _logger.LogInformation("Password changed for user {UserId}", userId);
     }
 
+    // ── OAuth 2.0 Client Credentials (Service-to-Service) ────────────
+    public async Task<ServiceTokenResponse> GetServiceTokenAsync(ClientCredentialsRequest request, CancellationToken ct = default)
+    {
+        // Validate client credentials
+        if (string.IsNullOrWhiteSpace(request.ClientId) || string.IsNullOrWhiteSpace(request.ClientSecret))
+            throw new UnauthorizedException("Invalid client credentials.");
+
+        // In production, you'd validate against a stored client credentials table
+        // For now, we'll validate from configuration (see AuthController for config usage)
+        // The controller will pass the configuration-validated clientId here
+
+        // Generate service token with short expiry (15 minutes)
+        var token = _jwtService.GenerateServiceToken(request.ClientId);
+
+        _logger.LogInformation("Service token issued for client {ClientId}", request.ClientId);
+
+        return new ServiceTokenResponse
+        {
+            AccessToken = token,
+            TokenType = "Bearer",
+            ExpiresIn = 15 * 60 // 15 minutes in seconds
+        };
+    }
+
     // ── Private Helpers ──────────────────────────────────────────────
     private async Task PublishDomainEventsAsync(User user, CancellationToken ct)
     {

@@ -1,17 +1,24 @@
 using CollegeService.Application.DTOs.Requests;
 using CollegeService.Application.Interfaces.Clients;
 using SharedKernel.Exceptions;
+using SharedKernel.Enums;
+using System.Net.Http.Headers;
 
 namespace CollegeService.Infrastructure.Services;
 
 public class IdentityServiceClient : IIdentityServiceClient
 {
     private readonly HttpClient _httpClient;
+    private readonly IServiceTokenProvider _tokenProvider;
     private readonly ILogger<IdentityServiceClient> _logger;
 
-    public IdentityServiceClient(HttpClient httpClient, ILogger<IdentityServiceClient> logger)
+    public IdentityServiceClient(
+        HttpClient httpClient,
+        IServiceTokenProvider tokenProvider,
+        ILogger<IdentityServiceClient> logger)
     {
         _httpClient = httpClient;
+        _tokenProvider = tokenProvider;
         _logger = logger;
     }
 
@@ -49,16 +56,23 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
+            // Get OAuth 2.0 service token
+            var token = await _tokenProvider.GetServiceTokenAsync(ct);
+
             var request = new RegisterUserRequest
             {
                 FullName = requestDto.FullName,
                 Email = requestDto.Email,
                 PhoneNumber = requestDto.PhoneNumber,
-                Password = Guid.NewGuid().ToString("N"), // consider letting identity service handle invites/passwords
-                Role = requestDto.Role,
+                Password = Guid.NewGuid().ToString("N"),
+                Role = UserRole.TPO,
                 CollegeId = requestDto.CollegeId,
                 CollegeCode = requestDto.CollegeCode
             };
+
+            // Add Bearer token to request
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
 
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsJsonAsync("/api/v1/users", request, ct), ct);
 
@@ -141,10 +155,10 @@ public class IdentityServiceClient : IIdentityServiceClient
 
     private static TpoDetails MapUserToTpoDetails(UserData user)
     {
-        var verificationStatus = SharedKernel.Enums.VerificationStatus.Unverified;
-        if (!Enum.TryParse<SharedKernel.Enums.VerificationStatus>(user.VerificationStatus, true, out verificationStatus))
+        var verificationStatus = VerificationStatus.Unverified;
+        if (!Enum.TryParse<VerificationStatus>(user.VerificationStatus, true, out verificationStatus))
         {
-            verificationStatus = SharedKernel.Enums.VerificationStatus.Unverified;
+            verificationStatus = VerificationStatus.Unverified;
         }
 
         return new TpoDetails

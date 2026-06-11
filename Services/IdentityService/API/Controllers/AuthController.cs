@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SharedKernel.Extensions;
 using SharedKernel.Wrappers;
+using System.Linq;
 
 namespace IdentityService.API.Controllers;
 
@@ -13,9 +14,13 @@ namespace IdentityService.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IAuthService authService)
-        => _authService = authService;
+    public AuthController(IAuthService authService, IConfiguration configuration)
+    {
+        _authService = authService;
+        _configuration = configuration;
+    }
 
     [HttpPost("login")]
     [AllowAnonymous]
@@ -26,6 +31,36 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.LoginAsync(request, GetIpAddress(), ct);
         return Ok(ApiResponse<Application.DTOs.Responses.AuthResponse>.Ok(result, "Login successful."));
+    }
+
+    [HttpPost("client-credentials")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<Application.DTOs.Responses.ServiceTokenResponse>), 200)]
+    [ProducesResponseType(typeof(ApiResponse), 400)]
+    [ProducesResponseType(typeof(ApiResponse), 401)]
+    public async Task<IActionResult> ClientCredentials(
+        [FromBody] ClientCredentialsRequest request,
+        CancellationToken ct)
+    {
+        // Validate credentials from configuration.
+        // The configuration stores service entries by logical name, not by client ID.
+        var clientConfig = _configuration.GetSection("ServiceClients")
+            .GetChildren()
+            .FirstOrDefault(c => string.Equals(c["ClientId"], request.ClientId, StringComparison.OrdinalIgnoreCase));
+
+        if (clientConfig is null)
+            return Unauthorized(ApiResponse.Fail("Invalid client ID."));
+
+        var configuredSecret = clientConfig["ClientSecret"];
+        if (string.IsNullOrWhiteSpace(configuredSecret) || configuredSecret != request.ClientSecret)
+            return Unauthorized(ApiResponse.Fail("Invalid client secret."));
+
+        // Issue service token
+        var result = await _authService.GetServiceTokenAsync(request, ct);
+        return Ok(ApiResponse<Application.DTOs.Responses.ServiceTokenResponse>.Ok(
+            result,
+            "Service token issued successfully."
+        ));
     }
 
     [HttpPost("register/student")]

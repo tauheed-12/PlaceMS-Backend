@@ -13,9 +13,10 @@ using CollegeService.Infrastructure.Services;
 using CollegeService.Infrastructure.Settings;
 using CollegeService.Infrastructure.Kafka;
 using CollegeService.Application.Services;
+using CollegeService.Application.Interfaces;
+using CollegeService.Application.Interfaces.Clients;
 using Microsoft.OpenApi.Models;
 using SharedKernel.Middleware;
-using CollegeService.Application.Interfaces;
 using SharedKernel.Abstractions;
 using SharedKernel.Constants;
 using Polly;
@@ -113,9 +114,37 @@ public static class ServiceExtensions
             .Handle<HttpRequestException>()
             .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 
-        services.AddHttpClient<IdentityServiceClient, IdentityServiceClient>(client =>
+        // Register service token provider with a configured IdentityService HTTP client.
+        services.AddHttpClient("IdentityServiceTokenClient", client =>
         {
-            client.BaseAddress = new Uri(config["IdentityService:BaseUrl"]!);
+            if (string.IsNullOrWhiteSpace(serviceUrls.IdentityService))
+            {
+                throw new InvalidOperationException("IdentityService base URL is not configured. Set ServiceUrls:IdentityService in appsettings.");
+            }
+
+            client.BaseAddress = new Uri(serviceUrls.IdentityService);
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddSingleton<IServiceTokenProvider>(sp =>
+        {
+            var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+            var client = httpClientFactory.CreateClient("IdentityServiceTokenClient");
+            return new ServiceTokenProvider(
+                client,
+                sp.GetRequiredService<IConfiguration>(),
+                sp.GetRequiredService<ILogger<ServiceTokenProvider>>());
+        });
+
+        // Register IdentityService HTTP client with token provider
+        services.AddHttpClient<IIdentityServiceClient, IdentityServiceClient>(client =>
+        {
+            if (string.IsNullOrWhiteSpace(serviceUrls.IdentityService))
+            {
+                throw new InvalidOperationException("IdentityService base URL is not configured. Set ServiceUrls:IdentityService in appsettings.");
+            }
+
+            client.BaseAddress = new Uri(serviceUrls.IdentityService);
             client.Timeout = TimeSpan.FromSeconds(10);
         });
         return services;
