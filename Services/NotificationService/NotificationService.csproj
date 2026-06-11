@@ -20,4 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\SharedKernel\SharedKernel.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Application/Templates\**\*.html" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

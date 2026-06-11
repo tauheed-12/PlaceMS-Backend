@@ -20,3 +20,8 @@ public class ServiceUrlSettings
     public string CollegeService { get; init; } = string.Empty;
     public string NotificationService { get; init; } = string.Empty;
 }
+
+public class AppSettings
+{
+    public string FrontendBaseUrl { get; init; } = string.Empty;
+}

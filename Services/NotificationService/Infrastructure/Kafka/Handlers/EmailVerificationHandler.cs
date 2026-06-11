@@ -30,6 +30,12 @@ public class EmailVerificationHandler : INotificationEventHandler
 
         var p = envelope.Payload;
 
+        if (string.IsNullOrEmpty(p.VerificationLink))
+        {
+            _logger.LogWarning("Email verification handler received empty VerificationLink for user {UserId} ({Email}). " +
+                "Check IdentityService event publisher.", p.UserId, p.Email);
+        }
+
         await _dispatcher.DispatchAsync(new DispatchNotificationRequest
         {
             RecipientUserId = p.UserId,
@@ -37,7 +43,7 @@ public class EmailVerificationHandler : INotificationEventHandler
             RecipientName = p.FullName,
             Type = NotificationType.EmailVerification,
             Title = "Verify your email — PMS",
-            Body = $"Hi {p.FullName}, please verify your email by clicking the link below.",
+            Body = $"Hi {p.FullName}, please verify your email by clicking the link below:\n{p.VerificationLink}",
             HtmlTemplateName = "EmailVerification",
             TemplateData = new Dictionary<string, string>
             {

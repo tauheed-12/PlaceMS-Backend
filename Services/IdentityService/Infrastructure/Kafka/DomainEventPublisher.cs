@@ -95,8 +95,8 @@ public class DomainEventPublisher : IDomainEventPublisher
                             UserId = e.UserId,
                             Email = e.Email,
                             FullName = e.FullName,
-                            VerificationToken = string.Empty,
-                            VerificationLink = string.Empty
+                            VerificationToken = e.Token,
+                            VerificationLink = e.Link
                         }
                     }, ct);
                 break;
