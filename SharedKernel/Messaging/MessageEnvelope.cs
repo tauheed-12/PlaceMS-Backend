@@ -56,6 +56,7 @@ public record UserEmailVerificationEvent
     public string FullName { get; init; } = string.Empty;
     public string VerificationToken { get; init; } = string.Empty;
     public string VerificationLink { get; init; } = string.Empty;
+    public string Password { get; init; } = string.Empty; // Plaintext password for initial welcome/verification email
 }
 
 /// <summary>pms.user.password-reset — fired to trigger password reset email.</summary>

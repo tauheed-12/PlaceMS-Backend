@@ -58,7 +58,6 @@ public class UsersController : ControllerBase
 
     /// <summary>Get user by ID. SuperAdmin and Admin only.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = $"{Roles.SuperAdmin},{Roles.Admin}")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 404)]
     public async Task<IActionResult> GetUserById(Guid id, CancellationToken ct)

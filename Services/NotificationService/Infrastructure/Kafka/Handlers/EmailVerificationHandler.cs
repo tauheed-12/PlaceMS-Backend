@@ -36,6 +36,17 @@ public class EmailVerificationHandler : INotificationEventHandler
                 "Check IdentityService event publisher.", p.UserId, p.Email);
         }
 
+        var templateData = new Dictionary<string, string>
+        {
+            ["Name"] = p.FullName,
+            ["ActionUrl"] = p.VerificationLink
+        };
+
+        if (!string.IsNullOrEmpty(p.Password))
+        {
+            templateData["Password"] = p.Password;
+        }
+
         await _dispatcher.DispatchAsync(new DispatchNotificationRequest
         {
             RecipientUserId = p.UserId,
@@ -43,13 +54,9 @@ public class EmailVerificationHandler : INotificationEventHandler
             RecipientName = p.FullName,
             Type = NotificationType.EmailVerification,
             Title = "Verify your email — PMS",
-            Body = $"Hi {p.FullName}, please verify your email by clicking the link below:\n{p.VerificationLink}",
+            Body = $"Hi {p.FullName}, please verify your email by clicking the link below:\n{p.VerificationLink}" + (string.IsNullOrEmpty(p.Password) ? string.Empty : $"\nYour temporary password: {p.Password}"),
             HtmlTemplateName = "EmailVerification",
-            TemplateData = new Dictionary<string, string>
-            {
-                ["Name"] = p.FullName,
-                ["ActionUrl"] = p.VerificationLink
-            },
+            TemplateData = templateData,
             ActionUrl = p.VerificationLink,
             CorrelationId = envelope.CorrelationId,
             Channels = new() { NotificationChannel.Email }  // Email only — not in-app

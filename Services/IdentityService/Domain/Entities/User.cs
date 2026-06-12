@@ -63,7 +63,7 @@ public class User : AggregateRoot
     }
 
     // Generates a unique email verification token, sets its expiry time, and updates the user entity accordingly. This method is typically called when a new user is created or when a user requests to resend the verification email.
-    public string GenerateEmailVerificationToken()
+    public string GenerateEmailVerificationToken(string? plaintextPassword = null)
     {
         var token = GenerateSecureToken();
         EmailVerificationToken = token;
@@ -71,11 +71,11 @@ public class User : AggregateRoot
         SetUpdatedAt();
 
         string emailVerificationLink = $"http://localhost:3000/verify-email?token={token}";
-        RaiseDomainEvent(new UserCreatedDomainEvent(Id, FullName, Email, Role.ToString(), EmailVerificationToken, emailVerificationLink));
+        RaiseDomainEvent(new UserCreatedDomainEvent(Id, FullName, Email, Role.ToString(), EmailVerificationToken, emailVerificationLink, plaintextPassword ?? string.Empty));
         return token;
     }
 
-    public string RegenerateEmailVerificationToken()
+    public string RegenerateEmailVerificationToken(string? plaintextPassword = null)
     {
         string token = GenerateSecureToken();
         EmailVerificationToken = token;
@@ -83,7 +83,7 @@ public class User : AggregateRoot
         SetUpdatedAt();
 
         string emailVerificationLink = $"http://localhost:3000/verify-email?token={token}";
-        RaiseDomainEvent(new UserEmailVerificationDomainEvent(Id, Email, FullName, EmailVerificationToken, emailVerificationLink));
+        RaiseDomainEvent(new UserEmailVerificationDomainEvent(Id, Email, FullName, EmailVerificationToken, emailVerificationLink, plaintextPassword ?? string.Empty));
         return token;
     }
     // Verifies the user's email by checking the provided token against the stored token and ensuring it has not expired. If the verification is successful, it updates the user's verification status and records the time of verification.

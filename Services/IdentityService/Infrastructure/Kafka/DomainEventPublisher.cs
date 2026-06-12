@@ -61,6 +61,8 @@ public class DomainEventPublisher : IDomainEventPublisher
                             Email = e.Email,
                             FullName = e.FullName,
                             Role = e.Role,
+                            VerificationToken = e.EmailVerificationToken,
+                            VerificationLink = e.EmailVerificationLink
                         }
                     }, ct);
 
@@ -77,7 +79,8 @@ public class DomainEventPublisher : IDomainEventPublisher
                             Email = e.Email,
                             FullName = e.FullName,
                             VerificationToken = e.EmailVerificationToken,
-                            VerificationLink = e.EmailVerificationLink
+                            VerificationLink = e.EmailVerificationLink,
+                            Password = e.Password
                         }
                     }, ct);
                 break;
@@ -96,7 +99,8 @@ public class DomainEventPublisher : IDomainEventPublisher
                             Email = e.Email,
                             FullName = e.FullName,
                             VerificationToken = e.Token,
-                            VerificationLink = e.Link
+                            VerificationLink = e.Link,
+                            Password = e.Password
                         }
                     }, ct);
                 break;

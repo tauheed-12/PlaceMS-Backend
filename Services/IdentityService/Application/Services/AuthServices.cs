@@ -86,19 +86,21 @@ public class AuthService : IAuthService
         string? collegeCode = request.CollegeCode;
 
         // Validate college exists if provided
-        if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
-        {
-            var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
-            if (college is null || !college.IsActive)
-                throw new NotFoundException("College", collegeCode);
+        // if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
+        // {
+        //     var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
+        //     if (college is null || !college.IsActive)
+        //         throw new NotFoundException("College", collegeCode);
 
-            if (college.CollegeId != collegeId.Value)
-                throw new DomainValidationException("College ID and college code do not match.");
+        //     if (college.CollegeId != collegeId.Value)
+        //         throw new DomainValidationException("College ID and college code do not match.");
 
-            collegeId = college.CollegeId;
-        }
+        //     collegeId = college.CollegeId;
+        // }
 
-        var passwordHash = _passwordService.HashPassword(request.Password);
+        var password = request.FullName.Split(' ').LastOrDefault() + "@" + new Random().Next(1000, 9999);
+
+        var passwordHash = _passwordService.HashPassword(password);
 
         var user = User.CreateUser(
             request.FullName,
@@ -109,9 +111,10 @@ public class AuthService : IAuthService
             collegeId,
             collegeCode);
 
-        var verificationToken = user.GenerateEmailVerificationToken();
+        // Pass the generated plaintext password into the verification event so
+        // NotificationService can include it in the welcome/verification email.
+        var verificationToken = user.GenerateEmailVerificationToken(password);
 
-        _logger.LogInformation("User verification token {VerificationToken}", verificationToken);
         await _userRepository.AddAsync(user, ct);
 
         await _userRepository.SaveChangesAsync(ct);
@@ -142,7 +145,9 @@ public class AuthService : IAuthService
         if (!college.IsActive)
             throw new BusinessRuleException("This college is not accepting registrations.");
 
-        var passwordHash = _passwordService.HashPassword(request.Password);
+        // Generate a password since frontend may not collect it during student self-registration
+        var password = request.FullName.Split(' ').LastOrDefault() + "@" + new Random().Next(1000, 9999);
+        var passwordHash = _passwordService.HashPassword(password);
 
         var user = User.CreateUser(
             request.FullName,
@@ -153,8 +158,7 @@ public class AuthService : IAuthService
             college.CollegeId,
             college.CollegeCode);
 
-        var verificationToken = user.GenerateEmailVerificationToken();
-        _logger.LogInformation("User verification token {VerificationToken}", verificationToken);
+        var verificationToken = user.GenerateEmailVerificationToken(password);
 
         await _userRepository.AddAsync(user, ct);
 
@@ -284,7 +288,7 @@ public class AuthService : IAuthService
     }
 
     // ── OAuth 2.0 Client Credentials (Service-to-Service) ────────────
-    public async Task<ServiceTokenResponse> GetServiceTokenAsync(ClientCredentialsRequest request, CancellationToken ct = default)
+    public Task<ServiceTokenResponse> GetServiceTokenAsync(ClientCredentialsRequest request, CancellationToken ct = default)
     {
         // Validate client credentials
         if (string.IsNullOrWhiteSpace(request.ClientId) || string.IsNullOrWhiteSpace(request.ClientSecret))
@@ -299,12 +303,12 @@ public class AuthService : IAuthService
 
         _logger.LogInformation("Service token issued for client {ClientId}", request.ClientId);
 
-        return new ServiceTokenResponse
+        return Task.FromResult(new ServiceTokenResponse
         {
             AccessToken = token,
             TokenType = "Bearer",
             ExpiresIn = 15 * 60 // 15 minutes in seconds
-        };
+        });
     }
 
     // ── Private Helpers ──────────────────────────────────────────────
