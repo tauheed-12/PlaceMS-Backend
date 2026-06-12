@@ -246,6 +246,86 @@ public class AdminCollegeScopeService : IAdminCollegeScopeService
         };
     }
 
+    public async Task<PaginatedResponseDto<AdminDetailsDto>> GetAdminsAsync(AdminFilterRequestDto filter, CancellationToken ct)
+    {
+        if (filter.PageNumber <= 0)
+            filter.PageNumber = 1;
+
+        if (filter.PageSize <= 0)
+            filter.PageSize = 10;
+
+        var adminGroups = await _repository.GetQueryable()
+            .GroupBy(s => s.AdminUserId)
+            .Select(g => new
+            {
+                AdminId = g.Key,
+                AssignedCollegeCount = g.Count()
+            })
+            .ToListAsync(ct);
+
+        var userDetails = await _identityClient
+            .GetUserDetailsByIdsBatchAsync(adminGroups.Select(g => g.AdminId), ct)
+            ?? new List<UserDetails>();
+
+        var adminEntries = adminGroups
+            .Join(userDetails,
+                scope => scope.AdminId,
+                user => user.UserId,
+                (scope, user) => new
+                {
+                    user.UserId,
+                    user.FullName,
+                    user.Email,
+                    user.PhoneNumber,
+                    user.Role,
+                    user.VerificationStatus,
+                    user.AccountStatus,
+                    user.LastLoginAt,
+                    user.CreatedAt,
+                    scope.AssignedCollegeCount
+                })
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var search = filter.Search.Trim().ToLower();
+            adminEntries = adminEntries
+                .Where(entry =>
+                    entry.FullName.ToLower().Contains(search) ||
+                    entry.Email.ToLower().Contains(search) ||
+                    entry.Role.ToLower().Contains(search))
+                .ToList();
+        }
+
+        var totalCount = adminEntries.Count;
+        var items = adminEntries
+            .Skip((filter.PageNumber - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .Select(entry => new AdminDetailsDto
+            {
+                UserId = entry.UserId,
+                FullName = entry.FullName,
+                Email = entry.Email,
+                PhoneNumber = entry.PhoneNumber,
+                Role = entry.Role,
+                VerificationStatus = entry.VerificationStatus,
+                AccountStatus = entry.AccountStatus,
+                AssignedCollegeCount = entry.AssignedCollegeCount,
+                LastLoginAt = entry.LastLoginAt,
+                CreatedAt = entry.CreatedAt
+            })
+            .ToList();
+
+        return new PaginatedResponseDto<AdminDetailsDto>
+        {
+            Items = items,
+            PageNumber = filter.PageNumber,
+            PageSize = filter.PageSize,
+            TotalCount = totalCount,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)filter.PageSize)
+        };
+    }
+
     public async Task<bool> HasAccessToCollegeAsync(Guid adminUserId, Guid collegeId, CancellationToken ct)
     {
         var collegeIds = await _repository.GetCollegeIdsByAdminIdAsync(adminUserId, ct);

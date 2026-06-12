@@ -1,7 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
 using ApplicationService.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 using SharedKernel.Exceptions;
 using SharedKernel.Wrappers;
 
@@ -10,12 +8,10 @@ namespace ApplicationService.Infrastructure.Services;
 public class DriveServiceClient : IDriveServiceClient
 {
     private readonly HttpClient _httpClient;
-    private readonly string _internalSecret;
 
-    public DriveServiceClient(HttpClient httpClient, IConfiguration configuration)
+    public DriveServiceClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _internalSecret = configuration["InternalServiceSecret"] ?? string.Empty;
     }
 
     public Task<InternalDriveDetail?> GetInternalDriveDetailAsync(Guid driveId, CancellationToken ct = default)
@@ -27,8 +23,7 @@ public class DriveServiceClient : IDriveServiceClient
     private async Task<T?> GetInternalResponseAsync<T>(string path, CancellationToken ct = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
-        if (!string.IsNullOrWhiteSpace(_internalSecret))
-            request.Headers.Add("X-Internal-Secret", _internalSecret);
+
 
         using var response = await _httpClient.SendAsync(request, ct);
 
@@ -38,9 +33,8 @@ public class DriveServiceClient : IDriveServiceClient
         if (!response.IsSuccessStatusCode)
             throw new ServiceUnavailableException("DriveService", $"Internal endpoint returned {(int)response.StatusCode}");
 
-        var envelope = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(cancellationToken: ct);
-        if (envelope is null)
-            throw new ServiceUnavailableException("DriveService", "The response body could not be deserialized.");
+        var envelope = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(cancellationToken: ct)
+            ?? throw new ServiceUnavailableException("DriveService", "The response body could not be deserialized.");
 
         if (!envelope.Success)
             throw new ServiceUnavailableException("DriveService", envelope.Message);

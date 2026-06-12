@@ -9,20 +9,15 @@ namespace CollegeService.Infrastructure.Services;
 public class IdentityServiceClient : IIdentityServiceClient
 {
     private readonly HttpClient _httpClient;
-    private readonly IServiceTokenProvider _tokenProvider;
     private readonly ILogger<IdentityServiceClient> _logger;
 
-    public IdentityServiceClient(
-        HttpClient httpClient,
-        IServiceTokenProvider tokenProvider,
-        ILogger<IdentityServiceClient> logger)
+    public IdentityServiceClient(HttpClient httpClient, ILogger<IdentityServiceClient> logger)
     {
         _httpClient = httpClient;
-        _tokenProvider = tokenProvider;
         _logger = logger;
     }
 
-    private async Task<HttpResponseMessage> SendWithRetriesAsync(Func<Task<HttpResponseMessage>> action, CancellationToken ct)
+    private async static Task<HttpResponseMessage> SendWithRetriesAsync(Func<Task<HttpResponseMessage>> action, CancellationToken ct)
     {
         const int maxAttempts = 3;
         var delay = 200; // ms
@@ -56,9 +51,6 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
-            // Get OAuth 2.0 service token
-            var token = await _tokenProvider.GetServiceTokenAsync(ct);
-
             var request = new RegisterUserRequest
             {
                 FullName = requestDto.FullName,
@@ -69,10 +61,6 @@ public class IdentityServiceClient : IIdentityServiceClient
                 CollegeId = requestDto.CollegeId,
                 CollegeCode = requestDto.CollegeCode
             };
-
-            // Add Bearer token to request
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
 
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsJsonAsync("/api/v1/users", request, ct), ct);
 
@@ -107,13 +95,6 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
-            // Get OAuth 2.0 service token for authentication
-            var token = await _tokenProvider.GetServiceTokenAsync(ct);
-
-            // Add Bearer token to request
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             var response = await SendWithRetriesAsync(() => _httpClient.GetAsync($"/api/v1/users/{tpoId}", ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -168,12 +149,75 @@ public class IdentityServiceClient : IIdentityServiceClient
         return results.Where(t => t is not null).Cast<TpoDetails>().ToList();
     }
 
+    public async Task<UserDetails?> GetUserDetailsAsync(Guid userId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await SendWithRetriesAsync(() => _httpClient.GetAsync($"/api/v1/users/{userId}", ct), ct);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return null;
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogError("Unauthorized to fetch user details for user {UserId}. StatusCode: {StatusCode}",
+                    userId, response.StatusCode);
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<UserApiResponse>(cancellationToken: ct);
+            if (result?.Data is null) return null;
+
+            return MapUserToUserDetails(result.Data);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Failed to fetch user details for user {UserId}", userId);
+            throw new ServiceUnavailableException("IdentityService",
+                "Unable to fetch user details at this time.");
+        }
+    }
+
+    public async Task<List<UserDetails>?> GetUserDetailsByIdsBatchAsync(IEnumerable<Guid> userIds, CancellationToken ct)
+    {
+        if (userIds == null || !userIds.Any())
+            return new List<UserDetails>();
+
+        const int maxParallel = 20;
+        using var semaphore = new SemaphoreSlim(maxParallel);
+
+        var tasks = userIds.Select(async id =>
+        {
+            await semaphore.WaitAsync(ct);
+            try
+            {
+                return await GetUserDetailsAsync(id, ct);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
+        var results = await Task.WhenAll(tasks);
+        return results.Where(t => t is not null).Cast<UserDetails>().ToList();
+    }
+
     private static TpoDetails MapUserToTpoDetails(UserData user)
     {
         var verificationStatus = VerificationStatus.Unverified;
         if (!Enum.TryParse<VerificationStatus>(user.VerificationStatus, true, out verificationStatus))
         {
             verificationStatus = VerificationStatus.Unverified;
+        }
+
+        var accountStatus = AccountStatus.Active;
+        if (!Enum.TryParse<AccountStatus>(user.AccountStatus, true, out accountStatus))
+        {
+            accountStatus = AccountStatus.Active;
         }
 
         return new TpoDetails
@@ -186,6 +230,37 @@ public class IdentityServiceClient : IIdentityServiceClient
             CollegeCode = user.CollegeCode ?? string.Empty,
             CollegeName = string.Empty,
             VerificationStatus = verificationStatus,
+            AccountStatus = accountStatus,
+            CreatedAt = user.CreatedAt
+        };
+    }
+
+    private static UserDetails MapUserToUserDetails(UserData user)
+    {
+        var verificationStatus = VerificationStatus.Unverified;
+        if (!Enum.TryParse<VerificationStatus>(user.VerificationStatus, true, out verificationStatus))
+        {
+            verificationStatus = VerificationStatus.Unverified;
+        }
+
+        var accountStatus = AccountStatus.Active;
+        if (!Enum.TryParse<AccountStatus>(user.AccountStatus, true, out accountStatus))
+        {
+            accountStatus = AccountStatus.Active;
+        }
+
+        return new UserDetails
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            Role = user.Role,
+            VerificationStatus = verificationStatus,
+            AccountStatus = accountStatus,
+            CollegeId = user.CollegeId,
+            CollegeCode = user.CollegeCode ?? string.Empty,
+            LastLoginAt = user.LastLoginAt,
             CreatedAt = user.CreatedAt
         };
     }
@@ -194,13 +269,6 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
-            // Get OAuth 2.0 service token for authentication
-            var token = await _tokenProvider.GetServiceTokenAsync(ct);
-
-            // Add Bearer token to request
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/activate", null, ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
@@ -223,13 +291,6 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
-            // Get OAuth 2.0 service token for authentication
-            var token = await _tokenProvider.GetServiceTokenAsync(ct);
-
-            // Add Bearer token to request
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
-
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/deactivate", null, ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
@@ -254,7 +315,7 @@ public class IdentityServiceClient : IIdentityServiceClient
         public string Email { get; init; } = string.Empty;
         public string PhoneNumber { get; init; } = string.Empty;
         public string Password { get; init; } = string.Empty;
-        public SharedKernel.Enums.UserRole Role { get; init; }
+        public UserRole Role { get; init; }
         public Guid? CollegeId { get; init; }
         public string? CollegeCode { get; init; }
     }
@@ -271,9 +332,12 @@ public class IdentityServiceClient : IIdentityServiceClient
         public string FullName { get; init; } = string.Empty;
         public string Email { get; init; } = string.Empty;
         public string PhoneNumber { get; init; } = string.Empty;
+        public string Role { get; init; } = string.Empty;
         public string? CollegeCode { get; init; }
         public Guid? CollegeId { get; init; }
         public string VerificationStatus { get; init; } = string.Empty;
+        public string AccountStatus { get; init; } = string.Empty;
+        public DateTime? LastLoginAt { get; init; }
         public DateTime CreatedAt { get; init; }
     }
 

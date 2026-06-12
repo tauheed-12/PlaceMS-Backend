@@ -20,6 +20,7 @@ using SharedKernel.Middleware;
 using SharedKernel.Abstractions;
 using SharedKernel.Constants;
 using Polly;
+using CollegeService.Infrastructure.Http;
 
 namespace CollegeService.API.Extensions;
 
@@ -114,7 +115,6 @@ public static class ServiceExtensions
             .Handle<HttpRequestException>()
             .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 
-        // Register service token provider with a configured IdentityService HTTP client.
         services.AddHttpClient("IdentityServiceTokenClient", client =>
         {
             if (string.IsNullOrWhiteSpace(serviceUrls.IdentityService))
@@ -136,7 +136,6 @@ public static class ServiceExtensions
                 sp.GetRequiredService<ILogger<ServiceTokenProvider>>());
         });
 
-        // Register IdentityService HTTP client with token provider
         services.AddHttpClient<IIdentityServiceClient, IdentityServiceClient>(client =>
         {
             if (string.IsNullOrWhiteSpace(serviceUrls.IdentityService))
@@ -146,7 +145,8 @@ public static class ServiceExtensions
 
             client.BaseAddress = new Uri(serviceUrls.IdentityService);
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<ServiceAuthenticationHandler>();
+
         return services;
     }
 

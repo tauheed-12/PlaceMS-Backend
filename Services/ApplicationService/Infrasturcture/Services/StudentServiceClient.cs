@@ -1,7 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
 using ApplicationService.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
 using SharedKernel.Exceptions;
 using SharedKernel.Wrappers;
 
@@ -10,12 +8,10 @@ namespace ApplicationService.Infrastructure.Services;
 public class StudentServiceClient : IStudentServiceClient
 {
     private readonly HttpClient _httpClient;
-    private readonly string _internalSecret;
 
-    public StudentServiceClient(HttpClient httpClient, IConfiguration configuration)
+    public StudentServiceClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
-        _internalSecret = configuration["InternalServiceSecret"] ?? string.Empty;
     }
 
     public Task<StudentEligibility?> GetEligibilityAsync(Guid studentId, CancellationToken ct = default)
@@ -27,8 +23,6 @@ public class StudentServiceClient : IStudentServiceClient
     private async Task<T?> GetInternalResponseAsync<T>(string path, CancellationToken ct = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Get, path);
-        if (!string.IsNullOrWhiteSpace(_internalSecret))
-            request.Headers.Add("X-Internal-Secret", _internalSecret);
 
         using var response = await _httpClient.SendAsync(request, ct);
 

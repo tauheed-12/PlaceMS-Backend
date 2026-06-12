@@ -61,6 +61,20 @@ public class TpoDetailsDto
     public DateTime CreatedAt { get; set; }
 }
 
+public class AdminDetailsDto
+{
+    public Guid UserId { get; init; }
+    public string FullName { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
+    public string PhoneNumber { get; init; } = string.Empty;
+    public string Role { get; init; } = string.Empty;
+    public VerificationStatus VerificationStatus { get; init; }
+    public AccountStatus AccountStatus { get; init; }
+    public int AssignedCollegeCount { get; init; }
+    public DateTime? LastLoginAt { get; init; }
+    public DateTime CreatedAt { get; init; }
+}
+
 public class PaginatedResponseDto<T>
 {
     public IEnumerable<T> Items { get; init; } = Enumerable.Empty<T>();

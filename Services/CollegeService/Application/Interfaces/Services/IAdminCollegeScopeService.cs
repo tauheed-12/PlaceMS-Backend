@@ -11,4 +11,5 @@ public interface IAdminCollegeScopeService
     Task<List<Guid>> GetCollegesIdsByAdminIdAsync(Guid adminUserId, CancellationToken ct);
     Task<PaginatedResponseDto<CollegeShortDto>> GetCollegesByAdminIdAsync(Guid adminId, CollegeFilterRequestDto filter, CancellationToken ct);
     Task<PaginatedResponseDto<TpoDetailsDto>> GetTposByAdminIdAsync(Guid adminUserId, TpoFilterRequestDto filter, CancellationToken ct);
+    Task<PaginatedResponseDto<AdminDetailsDto>> GetAdminsAsync(AdminFilterRequestDto filter, CancellationToken ct);
 }

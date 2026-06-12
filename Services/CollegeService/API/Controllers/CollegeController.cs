@@ -86,7 +86,7 @@ public class CollegeController : ControllerBase
 
     // Get all colleges  
     [HttpGet]
-    [Authorize(Roles = Roles.SuperAdmin)]
+    [Authorize(Roles = Roles.SuperAdminOrAdmin)]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResponseDto<CollegeShortDto>>), 200)]
     public async Task<IActionResult> GetAllColleges(CancellationToken ct, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
@@ -108,6 +108,7 @@ public class CollegeController : ControllerBase
 
     // Search colleges with filters
     [HttpGet("search")]
+    [Authorize(Roles = Roles.SuperAdminOrAdmin)]
     [ProducesResponseType(typeof(PagedResult<CollegeShortDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetColleges([FromQuery] CollegeFilterRequestDto filter, CancellationToken ct)

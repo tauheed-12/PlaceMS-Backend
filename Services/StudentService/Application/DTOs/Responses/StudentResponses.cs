@@ -90,7 +90,6 @@ public record StudentSummaryResponse
     public string Branch { get; init; } = string.Empty;
     public double Cgpa { get; init; }
     public int BatchYear { get; init; }
-    public List<string> Skills { get; init; } = new();
     public int ProfileCompletionScore { get; init; }
 }
 

@@ -1,31 +1,35 @@
 using System.Net.Http.Json;
 using IdentityService.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SharedKernel.Exceptions;
 
 namespace IdentityService.Infrastructure.Services;
 
-/// <summary>
-/// HTTP client that calls the College Service to validate college codes
-/// during student registration. Uses IHttpClientFactory with Polly
-/// retry and circuit breaker policies registered in DI.
-/// </summary>
 public class CollegeServiceClient : ICollegeServiceClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<CollegeServiceClient> _logger;
+    private readonly string _internalSecret;
 
-    public CollegeServiceClient(HttpClient httpClient, ILogger<CollegeServiceClient> logger)
+    public CollegeServiceClient(HttpClient httpClient, IConfiguration config, ILogger<CollegeServiceClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _internalSecret = config["InternalServiceSecret"] ?? string.Empty;
     }
 
     public async Task<CollegeValidationResult?> ValidateCollegeCodeAsync(string collegeCode, CancellationToken ct = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/api/v1/colleges/validate/{collegeCode.ToUpperInvariant()}", ct);
+            var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/internal/colleges/validate/{collegeCode.ToUpperInvariant()}");
+            if (!string.IsNullOrWhiteSpace(_internalSecret))
+            {
+                request.Headers.Add("X-Internal-Secret", _internalSecret);
+            }
+
+            var response = await _httpClient.SendAsync(request, ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;

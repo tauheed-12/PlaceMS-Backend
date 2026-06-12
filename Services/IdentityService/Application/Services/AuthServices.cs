@@ -132,15 +132,8 @@ public class AuthService : IAuthService
             throw new ConflictException("User", "email", request.Email);
 
         // Validate college code against College Service
-        // var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
-        // ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
-
-        var college = new
-        {
-            IsActive = true,
-            CollegeId = Guid.NewGuid(),
-            CollegeCode = "JMI01"
-        };
+        var college = await _collegeClient.ValidateCollegeCodeAsync(request.CollegeCode, ct)
+            ?? throw new NotFoundException($"College with code '{request.CollegeCode}' not found.");
 
         if (!college.IsActive)
             throw new BusinessRuleException("This college is not accepting registrations.");

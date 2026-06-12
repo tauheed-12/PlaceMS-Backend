@@ -27,6 +27,9 @@ public class AdminCollegeScopeRepository : IAdminCollegeScopeRepository
             .Select(s => s.CollegeId)
             .ToListAsync(ct);
 
+    public IQueryable<AdminCollegeScope> GetQueryable()
+        => _context.AdminCollegeScopes;
+
     public void RemoveScope(AdminCollegeScope scope)
         => _context.AdminCollegeScopes.Remove(scope);
 

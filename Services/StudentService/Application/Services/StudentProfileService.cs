@@ -312,7 +312,6 @@ public class StudentProfileService : IStudentProfileService
             Branch = profile.Branch,
             Cgpa = profile.Cgpa,
             BatchYear = profile.BatchYear,
-            Skills = profile.Skills.Select(s => s.Name).ToList(),
             ProfileCompletionScore = profile.ProfileCompletionScore
         };
     }
