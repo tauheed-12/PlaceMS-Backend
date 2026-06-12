@@ -72,6 +72,7 @@ public class RegisterTpoIdentityRequestDto
     public Guid CollegeId { get; set; }
     public string CollegeCode { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.TPO;
+    public string Password { get; set; } = string.Empty;
 }
 
 public record AdminCollegeScopeRequestDto

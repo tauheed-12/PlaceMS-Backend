@@ -107,10 +107,25 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
+            // Get OAuth 2.0 service token for authentication
+            var token = await _tokenProvider.GetServiceTokenAsync(ct);
+
+            // Add Bearer token to request
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
             var response = await SendWithRetriesAsync(() => _httpClient.GetAsync($"/api/v1/users/{tpoId}", ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
                 return null;
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+                response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                _logger.LogError("Unauthorized to fetch TPO details for user {UserId}. StatusCode: {StatusCode}",
+                    tpoId, response.StatusCode);
+                return null;
+            }
 
             response.EnsureSuccessStatusCode();
 
@@ -179,6 +194,13 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
+            // Get OAuth 2.0 service token for authentication
+            var token = await _tokenProvider.GetServiceTokenAsync(ct);
+
+            // Add Bearer token to request
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/activate", null, ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
@@ -201,6 +223,13 @@ public class IdentityServiceClient : IIdentityServiceClient
     {
         try
         {
+            // Get OAuth 2.0 service token for authentication
+            var token = await _tokenProvider.GetServiceTokenAsync(ct);
+
+            // Add Bearer token to request
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", token);
+
             var response = await SendWithRetriesAsync(() => _httpClient.PostAsync($"/api/v1/users/{tpoId}/deactivate", null, ct), ct);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;

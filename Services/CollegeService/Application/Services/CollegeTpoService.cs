@@ -82,6 +82,7 @@ public class CollegeTpoService : ICollegeTpoService
         var tpoDetails = await _identityClient.GetTpoDetails(tpo.TpoId, ct)
             ?? throw new NotFoundException("TPO not found");
 
+        _logger.LogInformation("TPO details {TpoDetails} fetched from IdentityService for TPO {TpoUserId}", tpoDetails, tpo.TpoId);
         _logger.LogInformation("TPO {TpoUserId} ({TpoEmail}) assigned to college {CollegeId} by admin {AssignedBy}",
             identityResult.UserId, request.Email, request.CollegeId, assignedBy);
 
