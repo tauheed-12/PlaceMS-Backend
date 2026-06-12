@@ -1,4 +1,4 @@
-namespace CollegeService.Infrastructure.Services;
+namespace DriveService.Infrastructure.Services;
 
 /// <summary>
 /// OAuth 2.0 Client Credentials Flow Token Provider for service-to-service authentication.
