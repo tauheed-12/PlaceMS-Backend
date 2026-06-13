@@ -86,17 +86,17 @@ public class AuthService : IAuthService
         string? collegeCode = request.CollegeCode;
 
         // Validate college exists if provided
-        // if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
-        // {
-        //     var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
-        //     if (college is null || !college.IsActive)
-        //         throw new NotFoundException("College", collegeCode);
+        if (collegeId.HasValue && !string.IsNullOrWhiteSpace(collegeCode))
+        {
+            var college = await _collegeClient.ValidateCollegeCodeAsync(collegeCode, ct);
+            if (college is null || !college.IsActive)
+                throw new NotFoundException("College", collegeCode);
 
-        //     if (college.CollegeId != collegeId.Value)
-        //         throw new DomainValidationException("College ID and college code do not match.");
+            if (college.CollegeId != collegeId.Value)
+                throw new DomainValidationException("College ID and college code do not match.");
 
-        //     collegeId = college.CollegeId;
-        // }
+            collegeId = college.CollegeId;
+        }
 
         var password = request.FullName.Split(' ').LastOrDefault() + "@" + new Random().Next(1000, 9999);
 
@@ -111,9 +111,7 @@ public class AuthService : IAuthService
             collegeId,
             collegeCode);
 
-        // Pass the generated plaintext password into the verification event so
-        // NotificationService can include it in the welcome/verification email.
-        var verificationToken = user.GenerateEmailVerificationToken(password);
+        user.GenerateEmailVerificationToken(password);
 
         await _userRepository.AddAsync(user, ct);
 
@@ -138,8 +136,7 @@ public class AuthService : IAuthService
         if (!college.IsActive)
             throw new BusinessRuleException("This college is not accepting registrations.");
 
-        // Generate a password since frontend may not collect it during student self-registration
-        var password = request.FullName.Split(' ').LastOrDefault() + "@" + new Random().Next(1000, 9999);
+        var password = request.Password;
         var passwordHash = _passwordService.HashPassword(password);
 
         var user = User.CreateUser(
@@ -151,7 +148,7 @@ public class AuthService : IAuthService
             college.CollegeId,
             college.CollegeCode);
 
-        var verificationToken = user.GenerateEmailVerificationToken(password);
+        user.GenerateEmailVerificationToken(password);
 
         await _userRepository.AddAsync(user, ct);
 
