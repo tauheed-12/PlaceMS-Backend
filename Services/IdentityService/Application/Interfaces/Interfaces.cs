@@ -1,6 +1,7 @@
 using IdentityService.Application.DTOs.Requests;
 using IdentityService.Application.DTOs.Responses;
 using IdentityService.Domain.Entities;
+using SharedKernel.Enums;
 
 namespace IdentityService.Application.Interfaces;
 
@@ -78,4 +79,6 @@ public record CollegeValidationResult
     public string CollegeName { get; init; } = string.Empty;
     public string CollegeCode { get; init; } = string.Empty;
     public bool IsActive { get; init; }
+    public bool IsValid { get; init; }
+    public AccountStatus AccountStatus { get; init; }
 }

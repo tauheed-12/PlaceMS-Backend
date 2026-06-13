@@ -1,8 +1,6 @@
-using System.Net.Http.Json;
 using IdentityService.Application.Interfaces;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using SharedKernel.Exceptions;
+using SharedKernel.Enums;
 
 namespace IdentityService.Infrastructure.Services;
 
@@ -10,13 +8,11 @@ public class CollegeServiceClient : ICollegeServiceClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<CollegeServiceClient> _logger;
-    private readonly string _internalSecret;
 
     public CollegeServiceClient(HttpClient httpClient, IConfiguration config, ILogger<CollegeServiceClient> logger)
     {
         _httpClient = httpClient;
         _logger = logger;
-        _internalSecret = config["InternalServiceSecret"] ?? string.Empty;
     }
 
     public async Task<CollegeValidationResult?> ValidateCollegeCodeAsync(string collegeCode, CancellationToken ct = default)
@@ -24,10 +20,6 @@ public class CollegeServiceClient : ICollegeServiceClient
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/internal/colleges/validate/{collegeCode.ToUpperInvariant()}");
-            if (!string.IsNullOrWhiteSpace(_internalSecret))
-            {
-                request.Headers.Add("X-Internal-Secret", _internalSecret);
-            }
 
             var response = await _httpClient.SendAsync(request, ct);
 
@@ -46,7 +38,9 @@ public class CollegeServiceClient : ICollegeServiceClient
                 CollegeId = result.Data.CollegeId,
                 CollegeName = result.Data.CollegeName,
                 CollegeCode = result.Data.CollegeCode,
-                IsActive = result.Data.IsActive
+                IsActive = result.Data.IsActive,
+                IsValid = result.Data.IsValid,
+                AccountStatus = result.Data.AccountStatus
             };
         }
         catch (HttpRequestException ex)
@@ -66,6 +60,8 @@ public class CollegeServiceClient : ICollegeServiceClient
 
     private record CollegeValidationData
     {
+        public bool IsValid { get; init; }
+        public AccountStatus AccountStatus { get; init; }
         public Guid CollegeId { get; init; }
         public string CollegeName { get; init; } = string.Empty;
         public string CollegeCode { get; init; } = string.Empty;

@@ -4,6 +4,7 @@ using FluentValidation.AspNetCore;
 using IdentityService.Application.Interfaces;
 using IdentityService.Application.Services;
 using IdentityService.Application.Validators;
+using IdentityService.Infrastructure.Http;
 using IdentityService.Infrastructure.Kafka;
 using IdentityService.Infrastructure.Persistence;
 using IdentityService.Infrastructure.Repositories;
@@ -124,6 +125,7 @@ public static class ServiceExtensions
             client.BaseAddress = new Uri(serviceUrls.CollegeService);
             client.Timeout = TimeSpan.FromSeconds(10);
         })
+        .AddHttpMessageHandler<ServiceAuthenticationHandler>()
         .AddPolicyHandler(retryPolicy)
         .AddPolicyHandler(circuitBreakerPolicy);
 
