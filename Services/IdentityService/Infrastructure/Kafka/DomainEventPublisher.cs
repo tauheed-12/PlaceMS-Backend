@@ -121,6 +121,25 @@ public class DomainEventPublisher : IDomainEventPublisher
                     }, ct);
                 break;
 
+            case PasswordResetRequestedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.UserPasswordReset,
+                    new MessageEnvelope<UserPasswordResetEvent>
+                    {
+                        Source = "IdentityService",
+                        Topic = KafkaTopics.UserPasswordReset,
+                        EventType = e.EventType,
+                        Payload = new UserPasswordResetEvent
+                        {
+                            UserId = e.UserId,
+                            Email = e.Email,
+                            FullName = e.FullName,
+                            ResetToken = e.ResetToken,
+                            ResetLink = e.ResetLink
+                        }
+                    }, ct);
+                break;
+
             default:
                 _logger.LogWarning("No handler for domain event type {EventType}", @event.EventType);
                 break;

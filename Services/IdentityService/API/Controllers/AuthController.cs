@@ -42,8 +42,6 @@ public class AuthController : ControllerBase
         [FromBody] ClientCredentialsRequest request,
         CancellationToken ct)
     {
-        // Validate credentials from configuration.
-        // The configuration stores service entries by logical name, not by client ID.
         var clientConfig = _configuration.GetSection("ServiceClients")
             .GetChildren()
             .FirstOrDefault(c => string.Equals(c["ClientId"], request.ClientId, StringComparison.OrdinalIgnoreCase));
@@ -55,7 +53,6 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(configuredSecret) || configuredSecret != request.ClientSecret)
             return Unauthorized(ApiResponse.Fail("Invalid client secret."));
 
-        // Issue service token
         var result = await _authService.GetServiceTokenAsync(request, ct);
         return Ok(ApiResponse<Application.DTOs.Responses.ServiceTokenResponse>.Ok(
             result,

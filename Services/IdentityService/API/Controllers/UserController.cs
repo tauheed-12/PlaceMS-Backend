@@ -3,7 +3,6 @@ using IdentityService.Application.DTOs.Responses;
 using IdentityService.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SharedKernel.Constants;
 using SharedKernel.Extensions;
 using SharedKernel.Wrappers;
 
@@ -24,10 +23,7 @@ public class UsersController : ControllerBase
         _userRepository = userRepository;
     }
 
-    /// <summary>
-    /// Register a new Admin, TPO, Coordinator or Recruiter.
-    /// Only SuperAdmin and Admin can call this.
-    /// </summary>
+
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), 201)]
     [ProducesResponseType(typeof(ApiResponse), 400)]
@@ -42,7 +38,7 @@ public class UsersController : ControllerBase
             ApiResponse<RegisterResponse>.Created(result));
     }
 
-    /// <summary>Get authenticated user's own profile.</summary>
+
     [HttpGet("me")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
     public async Task<IActionResult> GetMe(CancellationToken ct)
@@ -56,7 +52,7 @@ public class UsersController : ControllerBase
         return Ok(ApiResponse<UserDto>.Ok(MapToDto(user)));
     }
 
-    /// <summary>Get user by ID. SuperAdmin and Admin only.</summary>
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), 200)]
     [ProducesResponseType(typeof(ApiResponse), 404)]

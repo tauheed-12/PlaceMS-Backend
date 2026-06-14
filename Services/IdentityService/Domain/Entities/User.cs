@@ -86,6 +86,7 @@ public class User : AggregateRoot
         RaiseDomainEvent(new UserEmailVerificationDomainEvent(Id, Email, FullName, EmailVerificationToken, emailVerificationLink, plaintextPassword ?? string.Empty));
         return token;
     }
+
     // Verifies the user's email by checking the provided token against the stored token and ensuring it has not expired. If the verification is successful, it updates the user's verification status and records the time of verification.
     public void VerifyEmail(string token)
     {
@@ -110,7 +111,7 @@ public class User : AggregateRoot
         EmailVerificationTokenExpiry = null;
         SetUpdatedAt();
 
-        RaiseDomainEvent(new UserEmailVerifiedDomainEvent(Id, Email));
+        // RaiseDomainEvent(new UserEmailVerifiedDomainEvent(Id, Email));
     }
 
     // Generates a unique password reset token, valid for 1 hours.
@@ -119,9 +120,11 @@ public class User : AggregateRoot
         var token = GenerateSecureToken();
         PasswordResetToken = token;
         PasswordResetTokenExpiry = DateTime.UtcNow.AddHours(1);
-
-        RaiseDomainEvent(new PasswordResetRequestedDomainEvent(Id, Email, FullName, token));
         SetUpdatedAt();
+
+        string passwordResetLink = $"http://localhost:3000/reset-password?token={token}";
+
+        RaiseDomainEvent(new PasswordResetRequestedDomainEvent(Id, Email, FullName, token, passwordResetLink));
         return token;
     }
 
@@ -143,7 +146,6 @@ public class User : AggregateRoot
         LockoutUntil = null;
 
         _refreshTokens.ForEach(rt => rt.Invalidate());
-
         SetUpdatedAt();
     }
 
@@ -246,6 +248,8 @@ public class User : AggregateRoot
         AccountStatus = AccountStatus.Deactivated;
         RevokeAllRefreshTokens("Account Deactivated");
         SetUpdatedAt();
+
+        RaiseDomainEvent(new UserDeactivatedDomainEvent(Id, Email, "System"));
     }
 
     public void Reactivate()

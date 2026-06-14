@@ -107,6 +107,74 @@ public class DomainEventPublisher : IDomainEventPublisher
                     }, ct);
                 break;
 
+            case DriveChangesRequestedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.DriveChangesRequested,
+                    new MessageEnvelope<DriveChangesRequestedEvent>
+                    {
+                        Source = "DriveService",
+                        Topic = KafkaTopics.DriveChangesRequested,
+                        EventType = e.EventType,
+                        Payload = new DriveChangesRequestedEvent
+                        {
+                            DriveId = e.DriveId,
+                            CompanyName = e.CompanyName,
+                            JobRole = e.JobRole,
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            TpoUserId = e.TpoUserId,
+                            TpoName = string.Empty,
+                            ChangeNote = e.Note,
+                            RecruiterUserId = e.RecruiterUserId,
+                            RecruiterEmail = string.Empty
+                        }
+                    }, ct);
+                break;
+
+            case DriveResubmittedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.DriveResubmitted,
+                    new MessageEnvelope<DriveResubmittedEvent>
+                    {
+                        Source = "DriveService",
+                        Topic = KafkaTopics.DriveResubmitted,
+                        EventType = e.EventType,
+                        Payload = new DriveResubmittedEvent
+                        {
+                            DriveId = e.DriveId,
+                            CompanyName = e.CompanyName,
+                            JobRole = e.JobRole,
+                            CollegeId = e.CollegeId,
+                            CollegeName = e.CollegeName,
+                            TpoUserId = e.TpoUserId ?? Guid.Empty,
+                            TpoEmail = string.Empty,
+                            TpoName = string.Empty,
+                            RecruiterUserId = e.RecruiterUserId,
+                            RecruiterEmail = string.Empty
+                        }
+                    }, ct);
+                break;
+
+            case DriveDeactivatedDomainEvent e:
+                await _kafkaPublisher.PublishAsync(
+                    KafkaTopics.DriveDeactivated,
+                    new MessageEnvelope<DriveDeactivatedEvent>
+                    {
+                        Source = "DriveService",
+                        Topic = KafkaTopics.DriveDeactivated,
+                        EventType = e.EventType,
+                        Payload = new DriveDeactivatedEvent
+                        {
+                            DriveId = e.DriveId,
+                            CompanyName = e.CompanyName,
+                            JobRole = e.JobRole,
+                            RecruiterUserId = e.RecruiterUserId,
+                            RecruiterEmail = string.Empty,
+                            CollegeIds = e.CollegeIds
+                        }
+                    }, ct);
+                break;
+
             default:
                 _logger.LogWarning("No handler for domain event type {EventType}", @event.EventType);
                 break;

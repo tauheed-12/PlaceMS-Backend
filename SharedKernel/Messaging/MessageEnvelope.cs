@@ -69,6 +69,14 @@ public record UserPasswordResetEvent
     public string ResetLink { get; init; } = string.Empty;
 }
 
+/// <summary>pms.user.deactivated — fired when a user is deactivated.</summary>
+public record UserDeactivatedEvent
+{
+    public Guid UserId { get; init; }
+    public string Email { get; init; } = string.Empty;
+    public string DeactivatedBy { get; init; } = string.Empty;
+}
+
 /// <summary>pms.college.registered — fired by CollegeService.</summary>
 public record CollegeRegisteredEvent
 {
@@ -156,6 +164,47 @@ public record DriveRejectedEvent
     public string RecruiterEmail { get; init; } = string.Empty;
 }
 
+/// <summary>pms.drive.changes-requested — fired by DriveService when TPO requests changes.</summary>
+public record DriveChangesRequestedEvent
+{
+    public Guid DriveId { get; init; }
+    public string CompanyName { get; init; } = string.Empty;
+    public string JobRole { get; init; } = string.Empty;
+    public Guid CollegeId { get; init; }
+    public string CollegeName { get; init; } = string.Empty;
+    public Guid TpoUserId { get; init; }
+    public string TpoName { get; init; } = string.Empty;
+    public string ChangeNote { get; init; } = string.Empty;
+    public Guid RecruiterUserId { get; init; }
+    public string RecruiterEmail { get; init; } = string.Empty;
+}
+
+/// <summary>pms.drive.resubmitted — fired by DriveService when recruiter resubmits after changes requested.</summary>
+public record DriveResubmittedEvent
+{
+    public Guid DriveId { get; init; }
+    public string CompanyName { get; init; } = string.Empty;
+    public string JobRole { get; init; } = string.Empty;
+    public Guid CollegeId { get; init; }
+    public string CollegeName { get; init; } = string.Empty;
+    public Guid TpoUserId { get; init; }
+    public string TpoEmail { get; init; } = string.Empty;
+    public string TpoName { get; init; } = string.Empty;
+    public Guid RecruiterUserId { get; init; }
+    public string RecruiterEmail { get; init; } = string.Empty;
+}
+
+/// <summary>pms.drive.deactivated — fired by DriveService when recruiter deactivates a drive.</summary>
+public record DriveDeactivatedEvent
+{
+    public Guid DriveId { get; init; }
+    public string CompanyName { get; init; } = string.Empty;
+    public string JobRole { get; init; } = string.Empty;
+    public Guid RecruiterUserId { get; init; }
+    public string RecruiterEmail { get; init; } = string.Empty;
+    public List<Guid> CollegeIds { get; init; } = new();
+}
+
 /// <summary>pms.application.submitted — fired by ApplicationService.</summary>
 public record ApplicationSubmittedEvent
 {
@@ -173,12 +222,25 @@ public record ApplicationStatusChangedEvent
 {
     public Guid ApplicationId { get; init; }
     public Guid StudentUserId { get; init; }
+    public Guid DriveId { get; init; }
     public string StudentEmail { get; init; } = string.Empty;
     public string StudentName { get; init; } = string.Empty;
     public string CompanyName { get; init; } = string.Empty;
     public string JobRole { get; init; } = string.Empty;
     public string PreviousStatus { get; init; } = string.Empty;
     public string NewStatus { get; init; } = string.Empty;
+}
+
+/// <summary>pms.application.withdrawn — fired by ApplicationService when student withdraws.</summary>
+public record ApplicationWithdrawnEvent
+{
+    public Guid ApplicationId { get; init; }
+    public Guid StudentUserId { get; init; }
+    public string StudentName { get; init; } = string.Empty;
+    public string StudentEmail { get; init; } = string.Empty;
+    public Guid DriveId { get; init; }
+    public string CompanyName { get; init; } = string.Empty;
+    public string JobRole { get; init; } = string.Empty;
 }
 
 /// <summary>pms.placement.confirmed — fired when student status is set to Placed/Offered.</summary>

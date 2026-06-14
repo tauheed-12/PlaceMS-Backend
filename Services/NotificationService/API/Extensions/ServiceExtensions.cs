@@ -64,8 +64,15 @@ public static class ServiceExtensions
     {
         // Register all handlers — consumer discovers them via DI
         services.AddScoped<INotificationEventHandler, EmailVerificationHandler>();
+        services.AddScoped<INotificationEventHandler, PasswordResetHandler>();
+        services.AddScoped<INotificationEventHandler, UserDeactivatedHandler>();
         services.AddScoped<INotificationEventHandler, ApplicationStatusChangedHandler>();
         services.AddScoped<INotificationEventHandler, DriveApprovalRequestedHandler>();
+        services.AddScoped<INotificationEventHandler, DriveApprovedHandler>();
+        services.AddScoped<INotificationEventHandler, DriveRejectedHandler>();
+        services.AddScoped<INotificationEventHandler, DriveChangesRequestedHandler>();
+        services.AddScoped<INotificationEventHandler, DriveResubmittedHandler>();
+        services.AddScoped<INotificationEventHandler, DriveDeactivatedHandler>();
         services.AddHostedService<NotificationKafkaConsumer>();
         return services;
     }

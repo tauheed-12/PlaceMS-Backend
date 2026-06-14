@@ -53,11 +53,15 @@ public static class KafkaTopics
     public const string DriveApprovalRequested = "pms.drive.approval-requested";
     public const string DriveApproved = "pms.drive.approved";
     public const string DriveRejected = "pms.drive.rejected";
+    public const string DriveChangesRequested = "pms.drive.changes-requested";
+    public const string DriveResubmitted = "pms.drive.resubmitted";
+    public const string DriveDeactivated = "pms.drive.deactivated";
     public const string DriveClosed = "pms.drive.closed";
 
     // Application events
     public const string ApplicationSubmitted = "pms.application.submitted";
     public const string ApplicationStatusChanged = "pms.application.status-changed";
+    public const string ApplicationWithdrawn = "pms.application.withdrawn";
     public const string PlacementConfirmed = "pms.placement.confirmed";
 }
 

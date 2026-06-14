@@ -17,7 +17,7 @@ public record UserEmailVerifiedDomainEvent(Guid UserId, string Email) : BaseDoma
     public override string EventType => "user.email-verified";
 }
 
-public record PasswordResetRequestedDomainEvent(Guid UserId, string Email, string FullName, string ResetToken) : BaseDomainEvent
+public record PasswordResetRequestedDomainEvent(Guid UserId, string Email, string FullName, string ResetToken, string ResetLink) : BaseDomainEvent
 {
     public override string EventType => "user.password-reset-requested";
 }

@@ -183,6 +183,8 @@ public class AuthService : IAuthService
         user.RegenerateEmailVerificationToken();
         await _userRepository.SaveChangesAsync(ct);
 
+        await PublishDomainEventsAsync(user, ct);
+
         _logger.LogInformation("Resent verification email to {Email}", request.Email);
     }
 
@@ -197,10 +199,11 @@ public class AuthService : IAuthService
 
         var resetToken = user.GeneratePasswordResetToken();
         _logger.LogInformation("Forogot password token {ResetToken}", resetToken);
+
         await _userRepository.SaveChangesAsync(ct);
 
-        // Publish to Kafka → Notification Service sends reset email
-        // (Domain event approach here would also work, using direct publish for simplicity)
+        await PublishDomainEventsAsync(user, ct);
+
         _logger.LogInformation("Password reset requested for {Email}", request.Email);
     }
 
@@ -220,9 +223,6 @@ public class AuthService : IAuthService
     // ── Token Refresh ────────────────────────────────────────────────
     public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request, string ipAddress, CancellationToken ct = default)
     {
-        // We need to find which user owns this refresh token
-        // In production, you'd store userId alongside the token or use a lookup table
-        // Here we query via the token value
         var user = await FindUserByRefreshTokenAsync(request.RefreshToken, ct)
             ?? throw new UnauthorizedException("Invalid or expired refresh token.");
 
@@ -237,7 +237,7 @@ public class AuthService : IAuthService
         return BuildAuthResponse(accessToken, newRefreshToken, user);
     }
 
-    // ── Logout ───────────────────────────────────────────────────────
+    // logout
     public async Task LogoutAsync(string refreshToken, CancellationToken ct = default)
     {
         var user = await FindUserByRefreshTokenAsync(refreshToken, ct);
@@ -258,7 +258,7 @@ public class AuthService : IAuthService
         await _userRepository.SaveChangesAsync(ct);
     }
 
-    // ── Change Password ──────────────────────────────────────────────
+    // Change Password
     public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByIdWithTokensAsync(userId, ct)
@@ -270,14 +270,12 @@ public class AuthService : IAuthService
         var newHash = _passwordService.HashPassword(request.NewPassword);
         user.ResetPassword(user.PasswordResetToken ?? string.Empty, newHash);
 
-        // For ChangePassword we don't need the reset token flow,
-        // just update hash and invalidate sessions
         await _userRepository.SaveChangesAsync(ct);
 
         _logger.LogInformation("Password changed for user {UserId}", userId);
     }
 
-    // ── OAuth 2.0 Client Credentials (Service-to-Service) ────────────
+    // OAuth 2.0 Client Credentials (Service-to-Service) 
     public Task<ServiceTokenResponse> GetServiceTokenAsync(ClientCredentialsRequest request, CancellationToken ct = default)
     {
         // Validate client credentials
@@ -301,7 +299,7 @@ public class AuthService : IAuthService
         });
     }
 
-    // ── Private Helpers ──────────────────────────────────────────────
+    // Private Helpers 
     private async Task PublishDomainEventsAsync(User user, CancellationToken ct)
     {
         var events = user.DomainEvents.ToList();
@@ -314,8 +312,8 @@ public class AuthService : IAuthService
 
     private async Task<User?> FindUserByRefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
-        // This requires a custom repo query since EF needs to traverse the token collection
-        return await _userRepository.GetByIdWithTokensAsync(Guid.Empty, ct); // placeholder — see repo impl
+
+        return await _userRepository.GetByIdWithTokensAsync(Guid.Empty, ct);
     }
 
     private static AuthResponse BuildAuthResponse(string accessToken, RefreshToken refreshToken, User user)

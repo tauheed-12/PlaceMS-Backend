@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using NotificationService.Application.DTOs.Requests;
 using NotificationService.Application.Interfaces;
 using NotificationService.Domain.Enums;
@@ -8,16 +7,16 @@ using SharedKernel.Messaging;
 
 namespace NotificationService.Infrastructure.Kafka.Handlers;
 
-public class ApplicationStatusChangeHandler : INotificationEventHandler
+public class ApplicationCreatedHandler : INotificationEventHandler
 {
-    public string Topic => KafkaTopics.ApplicationStatusChanged; // Assuming this handler is for application status changes, adjust as needed
+    public string Topic => KafkaTopics.ApplicationSubmitted;
 
     private readonly INotificationDispatcher _dispatcher;
-    private readonly ILogger<ApplicationStatusChangeHandler> _logger;
+    private readonly ILogger<ApplicationCreatedHandler> _logger;
 
     private static readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
 
-    public ApplicationStatusChangeHandler(INotificationDispatcher dispatcher, ILogger<ApplicationStatusChangeHandler> logger)
+    public ApplicationCreatedHandler(INotificationDispatcher dispatcher, ILogger<ApplicationCreatedHandler> logger)
     {
         _dispatcher = dispatcher;
         _logger = logger;
@@ -25,7 +24,7 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
 
     public async Task HandleAsync(string messageValue, CancellationToken ct = default)
     {
-        var envelope = JsonSerializer.Deserialize<MessageEnvelope<ApplicationStatusChangedEvent>>(messageValue, _json);
+        var envelope = JsonSerializer.Deserialize<MessageEnvelope<ApplicationSubmittedEvent>>(messageValue, _json);
         if (envelope?.Payload is null) return;
 
         var p = envelope.Payload;
@@ -35,8 +34,7 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
             ["Name"] = p.StudentName,
             ["CompanyName"] = p.CompanyName,
             ["JobRole"] = p.JobRole,
-            ["DriveId"] = p.DriveId.ToString(),
-            ["NewStatus"] = p.NewStatus.ToString(),
+            ["DriveId"] = p.DriveId.ToString()
         };
 
 
@@ -45,10 +43,10 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
             RecipientUserId = p.StudentUserId,
             RecipientEmail = p.StudentEmail,
             RecipientName = p.StudentName,
-            Type = NotificationType.ApplicationStatusChanged,
-            Title = "Application Status Changed — PMS",
-            Body = $"Hi {p.StudentName}, your application status for company {p.CompanyName} with job role {p.JobRole} has been updated to {p.NewStatus}.",
-            HtmlTemplateName = "ApplicationStatusChanged",
+            Type = NotificationType.ApplicationSubmitted,
+            Title = "Application Submitted — PMS",
+            Body = $"Hi {p.StudentName}, your application for company {p.CompanyName} with job role {p.JobRole} has been submitted successfully.",
+            HtmlTemplateName = "ApplicationSubmitted",
             TemplateData = templateData,
             ActionUrl = null,
             CorrelationId = envelope.CorrelationId,

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Logging;
 using NotificationService.Application.DTOs.Requests;
 using NotificationService.Application.Interfaces;
 using NotificationService.Domain.Enums;
@@ -8,16 +7,16 @@ using SharedKernel.Messaging;
 
 namespace NotificationService.Infrastructure.Kafka.Handlers;
 
-public class ApplicationStatusChangeHandler : INotificationEventHandler
+public class ApplicationWithdrawnHandler : INotificationEventHandler
 {
-    public string Topic => KafkaTopics.ApplicationStatusChanged; // Assuming this handler is for application status changes, adjust as needed
+    public string Topic => KafkaTopics.ApplicationWithdrawn; // Assuming this handler is for application status changes, adjust as needed
 
     private readonly INotificationDispatcher _dispatcher;
-    private readonly ILogger<ApplicationStatusChangeHandler> _logger;
+    private readonly ILogger<ApplicationWithdrawnHandler> _logger;
 
     private static readonly JsonSerializerOptions _json = new() { PropertyNameCaseInsensitive = true };
 
-    public ApplicationStatusChangeHandler(INotificationDispatcher dispatcher, ILogger<ApplicationStatusChangeHandler> logger)
+    public ApplicationWithdrawnHandler(INotificationDispatcher dispatcher, ILogger<ApplicationWithdrawnHandler> logger)
     {
         _dispatcher = dispatcher;
         _logger = logger;
@@ -25,7 +24,7 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
 
     public async Task HandleAsync(string messageValue, CancellationToken ct = default)
     {
-        var envelope = JsonSerializer.Deserialize<MessageEnvelope<ApplicationStatusChangedEvent>>(messageValue, _json);
+        var envelope = JsonSerializer.Deserialize<MessageEnvelope<ApplicationWithdrawnEvent>>(messageValue, _json);
         if (envelope?.Payload is null) return;
 
         var p = envelope.Payload;
@@ -36,7 +35,7 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
             ["CompanyName"] = p.CompanyName,
             ["JobRole"] = p.JobRole,
             ["DriveId"] = p.DriveId.ToString(),
-            ["NewStatus"] = p.NewStatus.ToString(),
+            ["NewStatus"] = "Withdrawn",
         };
 
 
@@ -45,10 +44,10 @@ public class ApplicationStatusChangeHandler : INotificationEventHandler
             RecipientUserId = p.StudentUserId,
             RecipientEmail = p.StudentEmail,
             RecipientName = p.StudentName,
-            Type = NotificationType.ApplicationStatusChanged,
-            Title = "Application Status Changed — PMS",
-            Body = $"Hi {p.StudentName}, your application status for company {p.CompanyName} with job role {p.JobRole} has been updated to {p.NewStatus}.",
-            HtmlTemplateName = "ApplicationStatusChanged",
+            Type = NotificationType.ApplicationWithdrawn,
+            Title = "Application Withdrawn — PMS",
+            Body = $"Hi {p.StudentName}, your application for company {p.CompanyName} with job role {p.JobRole} has been withdrawn.",
+            HtmlTemplateName = "ApplicationWithdrawn",
             TemplateData = templateData,
             ActionUrl = null,
             CorrelationId = envelope.CorrelationId,

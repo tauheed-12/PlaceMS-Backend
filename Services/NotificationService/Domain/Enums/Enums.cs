@@ -30,7 +30,9 @@ public enum NotificationType
     ApplicationShortlisted = 22,    // → Student
     ApplicationOffered = 23,        // → Student
     ApplicationRejected = 24,       // → Student
-    PlacementConfirmed = 25,        // → Student + TPO
+    ApplicationWithdrawn = 25,        // → Student
+    PlacementConfirmed = 26,        // → Student + TPO,
+    ApplicationStatusChanged = 27,        // → Student (generic status change notification)
 }
 
 /// <summary>

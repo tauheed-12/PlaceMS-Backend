@@ -1,6 +1,7 @@
 using SharedKernel.Abstractions;
 using SharedKernel.Enums;
 using SharedKernel.Exceptions;
+using ApplicationService.Domain.Events;
 
 namespace ApplicationService.Domain.Entities;
 
@@ -60,12 +61,14 @@ public class StudentApplication : AggregateRoot
             AppliedOn = DateTime.UtcNow
         };
 
-        application.RaiseDomainEvent(new Domain.Events.ApplicationCreatedDomainEvent(
+        application.RaiseDomainEvent(new ApplicationCreatedDomainEvent(
             application.Id,
             application.DriveId,
-            application.CollegeId,
             application.StudentId,
-            application.StudentEmail
+            application.StudentName,
+            application.StudentEmail,
+            application.CompanyName,
+            application.JobRole
         ));
 
         return application;
@@ -86,12 +89,14 @@ public class StudentApplication : AggregateRoot
         Status = newStatus;
         SetUpdatedAt();
 
-        RaiseDomainEvent(new Domain.Events.ApplicationStatusUpdatedDomainEvent(
+        RaiseDomainEvent(new ApplicationStatusUpdatedDomainEvent(
             Id,
             DriveId,
-            CollegeId,
             StudentId,
+            StudentName,
             StudentEmail,
+            CompanyName,
+            JobRole,
             oldStatus.ToString(),
             newStatus.ToString()
         ));
@@ -111,12 +116,14 @@ public class StudentApplication : AggregateRoot
         Status = ApplicationStatus.Withdrawn;
         SetUpdatedAt();
 
-        RaiseDomainEvent(new Domain.Events.ApplicationWithdrawnDomainEvent(
+        RaiseDomainEvent(new ApplicationWithdrawnDomainEvent(
             Id,
             DriveId,
-            CollegeId,
             StudentId,
-            StudentEmail
+            StudentName,
+            StudentEmail,
+            CompanyName,
+            JobRole
         ));
     }
 }
