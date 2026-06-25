@@ -9,7 +9,7 @@ namespace NotificationService.Infrastructure.Kafka.Handlers;
 
 public class ApplicationWithdrawnHandler : INotificationEventHandler
 {
-    public string Topic => KafkaTopics.ApplicationWithdrawn; // Assuming this handler is for application status changes, adjust as needed
+    public string Topic => KafkaTopics.ApplicationWithdrawn;
 
     private readonly INotificationDispatcher _dispatcher;
     private readonly ILogger<ApplicationWithdrawnHandler> _logger;

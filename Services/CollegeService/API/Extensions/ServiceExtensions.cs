@@ -93,7 +93,7 @@ public static class ServiceExtensions
         services.AddScoped<ICollegeRepository, CollegeRepository>();
         services.AddScoped<ICollegeTpoRepository, CollegeTpoRepository>();
         services.AddScoped<IAdminCollegeScopeRepository, AdminCollegeScopeRepository>();
-        services.AddScoped<ICollegeService, CollegeService.Application.Services.CollegeService>();
+        services.AddScoped<ICollegeService, Application.Services.CollegeService>();
         services.AddScoped<IAdminCollegeScopeService, AdminCollegeScopeService>();
         services.AddScoped<ICollegeQueryService, CollegeQueryService>();
         services.AddScoped<ICollegeTpoService, CollegeTpoService>();

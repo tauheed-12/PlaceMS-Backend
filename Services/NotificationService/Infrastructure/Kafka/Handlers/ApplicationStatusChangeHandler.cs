@@ -10,7 +10,7 @@ namespace NotificationService.Infrastructure.Kafka.Handlers;
 
 public class ApplicationStatusChangeHandler : INotificationEventHandler
 {
-    public string Topic => KafkaTopics.ApplicationStatusChanged; // Assuming this handler is for application status changes, adjust as needed
+    public string Topic => KafkaTopics.ApplicationStatusChanged;
 
     private readonly INotificationDispatcher _dispatcher;
     private readonly ILogger<ApplicationStatusChangeHandler> _logger;

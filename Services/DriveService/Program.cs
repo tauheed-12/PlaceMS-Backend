@@ -1,27 +1,85 @@
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 using DriveService.API.Extensions;
+using DriveService.Infrastructure.Persistence;
+using SharedKernel.Middleware;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddSettings(builder.Configuration);
-builder.Services.AddDatabase(builder.Configuration);
-builder.Services.AddKafka();
-builder.Services.AddValidation();
-builder.Services.AddApplicationServices();
-builder.Services.AddHttpClients(builder.Configuration);
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    Log.Information("Starting DriveService...");
 
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
+    var builder = WebApplication.CreateBuilder(args);
+
+    // ── Serilog ──────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, services, config) =>
+        config.ReadFrom.Configuration(ctx.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext()
+              .Enrich.WithMachineName()
+              .Enrich.WithProperty("Service", "DriveService")
+              .WriteTo.Console(
+                  outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{Service}] {Message:lj}{NewLine}{Exception}"));
+
+    // ── Services ─────────────────────────────────────────────────
+    builder.Services
+        .AddSettings(builder.Configuration)
+        .AddKafka()
+        .AddDatabase(builder.Configuration)
+        .AddJwtAuthentication(builder.Configuration)
+        .AddValidation()
+        .AddHttpClients(builder.Configuration)
+        .AddApplicationServices()
+        .AddGlobalExceptionHandling()
+        .AddSwagger()
+        .AddControllers();
+
+    builder.Services.AddCors(options =>
+    options.AddPolicy("AllowGateway", policy =>
+        policy.WithOrigins(
+                  builder.Configuration["AllowedOrigins"]?.Split(',') ?? Array.Empty<string>())
+              .AllowAnyHeader()
+              .AllowAnyMethod()));
+
+    // ── Build ────────────────────────────────────────────────────
+    var app = builder.Build();
+
+    // ── Auto-migrate ─────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<DriveDbContext>();
+        await db.Database.MigrateAsync();
+        Log.Information("Database migration applied.");
+    }
+
+    // ── Middleware Pipeline ───────────────────────────────────────
+    app.UseGlobalExceptionHandler();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "PMS Student Service v1");
+            c.RoutePrefix = string.Empty;
+        });
+    }
+
+    app.UseCors("AllowGateway");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    await app.RunAsync();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "DriveService terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
