@@ -1,26 +1,84 @@
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 using ApplicationService.API.Extensions;
+using ApplicationService.Infrastructure.Persistence;
+using SharedKernel.Middleware;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddSettings(builder.Configuration);
-builder.Services.AddDatabase(builder.Configuration);
-builder.Services.AddApplicationServices();
-builder.Services.AddHttpClients(builder.Configuration);
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+try
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Information("Starting ApplicationService...");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // ── Serilog ──────────────────────────────────────────────────
+    builder.Host.UseSerilog((ctx, services, config) =>
+        config.ReadFrom.Configuration(ctx.Configuration)
+              .ReadFrom.Services(services)
+              .Enrich.FromLogContext()
+              .Enrich.WithMachineName()
+              .Enrich.WithProperty("Service", "ApplicationService")
+              .WriteTo.Console(
+                  outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{Service}] {Message:lj}{NewLine}{Exception}"));
+
+    // ── Services ─────────────────────────────────────────────────
+    builder.Services
+        .AddSettings(builder.Configuration)
+        .AddDatabase(builder.Configuration)
+        .AddJwtAuthentication(builder.Configuration)
+        .AddValidation()
+        .AddHttpClients(builder.Configuration)
+        .AddApplicationServices()
+        .AddGlobalExceptionHandling()
+        .AddSwagger()
+        .AddControllers();
+
+    builder.Services.AddCors(options =>
+    options.AddPolicy("AllowGateway", policy =>
+        policy.WithOrigins(
+                  builder.Configuration["AllowedOrigins"]?.Split(',') ?? Array.Empty<string>())
+              .AllowAnyHeader()
+              .AllowAnyMethod()));
+
+    // ── Build ────────────────────────────────────────────────────
+    var app = builder.Build();
+
+    // ── Auto-migrate ─────────────────────────────────────────────
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        await db.Database.MigrateAsync();
+        Log.Information("Database migration applied.");
+    }
+
+    // ── Middleware Pipeline ───────────────────────────────────────
+    app.UseGlobalExceptionHandler();
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "PMS Application Service v1");
+            c.RoutePrefix = string.Empty;
+        });
+    }
+
+    app.UseCors("AllowGateway");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    await app.RunAsync();
 }
-
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "ApplicationService terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

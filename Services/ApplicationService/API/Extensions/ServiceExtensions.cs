@@ -1,10 +1,20 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using ApplicationService.Application.Interfaces;
 using ApplicationService.Infrastructure.Http;
 using ApplicationService.Infrastructure.Persistence;
 using ApplicationService.Infrastructure.Repositories;
 using ApplicationService.Infrastructure.Services;
 using ApplicationService.Infrastructure.Settings;
+using ApplicationService.Infrastructure.Kafka;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using SharedKernel.Middleware;
+using SharedKernel.Abstractions;
+using SharedKernel.Constants;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using System.Text;
 using Polly;
 
 namespace ApplicationService.API.Extensions;
@@ -21,9 +31,64 @@ public static class ServiceExtensions
         return services;
     }
 
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration config)
+    {
+        var secret = config["JwtSettings:SecretKey"]!;
+        var issuer = config["JwtSettings:Issuer"]!;
+        var audience = config["JwtSettings:Audience"]!;
+
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = ctx =>
+                    {
+                        ctx.HandleResponse();
+                        ctx.Response.StatusCode = 401;
+                        ctx.Response.ContentType = "application/json";
+                        return ctx.Response.WriteAsync(
+                            """{"success":false,"message":"Authentication required.","errors":[]}""");
+                    },
+                    OnForbidden = ctx =>
+                    {
+                        ctx.Response.StatusCode = 403;
+                        ctx.Response.ContentType = "application/json";
+                        return ctx.Response.WriteAsync(
+                            """{"success":false,"message":"Forbidden.","errors":[]}""");
+                    }
+                };
+            });
+        return services;
+    }
+
+    public static IServiceCollection AddValidation(this IServiceCollection services)
+    {
+        services.AddFluentValidationAutoValidation();
+        // services.AddValidatorsFromAssemblyContaining<CreateCollegeRequestValidator>();
+        // services.AddValidatorsFromAssemblyContaining<UpdateCollegeRequestValidator>();
+        // services.AddValidatorsFromAssemblyContaining<CollegeFilterRequestValidator>();
+        // services.AddValidatorsFromAssemblyContaining<CreateTpoRequestValidator>();
+        return services;
+    }
+
     public static IServiceCollection AddSettings(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<ServiceUrlSettings>(configuration.GetSection("ServiceUrls"));
+        services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
+        services.Configure<KafkaSettings>(configuration.GetSection("KafkaSettings"));
         return services;
     }
 
@@ -31,6 +96,11 @@ public static class ServiceExtensions
     {
         services.AddScoped<IApplicationService, Application.Services.ApplicationService>();
         services.AddScoped<IApplicationRepository, ApplicationRepository>();
+        services.AddScoped<IStudentServiceClient, StudentServiceClient>();
+        services.AddScoped<IDriveServiceClient, DriveServiceClient>();
+        services.AddScoped<ServiceAuthenticationHandler>();
+        services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
+        services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
         return services;
     }
 
@@ -93,6 +163,52 @@ public static class ServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(10);
         }).AddHttpMessageHandler<ServiceAuthenticationHandler>();
 
+        return services;
+    }
+
+    public static IServiceCollection AddSwagger(this IServiceCollection services)
+    {
+        services.AddEndpointsApiExplorer();
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                Title = "PMS Application Service",
+                Version = "v1",
+                Description = "Application management for Placement Management System"
+            });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter: Bearer {your JWT token}"
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+        return services;
+    }
+
+    public static IServiceCollection AddGlobalExceptionHandling(this IServiceCollection services)
+    {
+        services.AddSingleton<IWebHostEnvironmentAccessor, WebHostEnvironmentAccessor>();
         return services;
     }
 }

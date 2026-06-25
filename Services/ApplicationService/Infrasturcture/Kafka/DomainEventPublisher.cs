@@ -5,7 +5,7 @@ using SharedKernel.Abstractions;
 using SharedKernel.Constants;
 using SharedKernel.Messaging;
 
-namespace DriveService.Infrastructure.Kafka;
+namespace ApplicationService.Infrastructure.Kafka;
 
 public class DomainEventPublisher : IDomainEventPublisher
 {
